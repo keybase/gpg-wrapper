@@ -1,0 +1,23 @@
+{
+  "name": "gpg-wrapper",
+  "version": "0.0.0",
+  "description": "A small wrapper around the gpg CLI",
+  "main": "lib/main.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/keybase/gpg-wrapper"
+  },
+  "dependencies" : {
+    "iced-coffee-script" : "~1.6.3-j",
+    "iced-error" : "~0.0.6",
+    "pgp-utils" : "~0.0.4"
+  },
+  "author": "Maxwell Krohn <themax@gmail.com>",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/keybase/gpg-wrapper/issues"
+  }
+}
