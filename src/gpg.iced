@@ -5,7 +5,7 @@ stream = require './stream'
 
 ##=======================================================================
 
-_log = console.warn
+_log = (x) -> console.warn x.toString('utf8')
 exports.set_log = set_log = (log) -> _log = log
 
 ##=======================================================================
