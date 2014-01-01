@@ -75,11 +75,18 @@ exports.gpg = gpg = ({args, stdin, stdout, stderr, quiet}, cb) ->
 
 ##=======================================================================
 
-exports.assert_no_collision = (short_id, cb) ->
+exports.assert_no_collision = assert_no_collision = (short_id, cb) ->
   args = [ "-k", short_id ]
   await gpg { args, quiet : true } , defer err, out
-  if not err? and (stream.grep { pattern : "/#{short_id}", buffer : out }).length > 1
+  if not err? and (n = (stream.grep { pattern : "/#{short_id}", buffer : out }).length) > 1
     err = new E.PgpIdCollisionError "Found two keys for ID=#{short_id}"
+  cb err, n
+
+##=======================================================================
+
+exports.assert_exactly_one = (short_id, cb) ->
+  await assert_no_collision short_id, defer err, n
+  err = new E.NotFoundError "Didn't find a key for #{short_id}" unless n is 1
   cb err
 
 ##=======================================================================
