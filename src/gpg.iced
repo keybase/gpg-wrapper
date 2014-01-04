@@ -23,6 +23,7 @@ exports.Engine = class Engine
 
     @_exit_code = null
     @_exit_cb = null
+    @_n_out = 0
 
   run : () ->
     @proc = spawn @name, @args
@@ -30,19 +31,26 @@ exports.Engine = class Engine
     @proc.stdout.pipe @stdout
     @proc.stderr.pipe @stderr
     @pid = @proc.pid
+    @_n_out = 3 # we need 3 exit events before we can exit
     @proc.on 'exit', (status) => @_got_exit status
+    @proc.stdout.on 'end', () => @_maybe_finish()
+    @proc.stderr.on 'end', () => @_maybe_finish()
     @
 
   _got_exit : (status) ->
     @_exit_code = status
     @proc = null
-    if (ecb = @_exit_cb)?
-      @_exit_cb = null
-      ecb status
-    @pid = -1
+    @_maybe_finish()
+
+  _maybe_finish : () ->
+    if --@_n_out <= 0
+      if (ecb = @_exit_cb)?
+        @_exit_cb = null
+        ecb @_exit_code
+      @pid = -1
 
   wait : (cb) ->
-    if @_exit_code then cb @_exit_code
+    if (@_exit_code and @_n_out <= 0) then cb @_exit_code
     else @_exit_cb = cb
 
 ##=======================================================================
