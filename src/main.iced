@@ -1,4 +1,5 @@
 modules = [
+  require("./cmd")
   require("./err")
   require("./gpg")
   require("./stream")
