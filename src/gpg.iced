@@ -15,7 +15,7 @@ exports.GPG = class GPG
 
   #----
 
-  mutate_args : (args) ->
+  mutate_args : (args) -> args
 
   #----
 
@@ -23,7 +23,7 @@ exports.GPG = class GPG
     inargs.args = @mutate_args inargs.args
     inargs.name = "gpg"
     inargs.eklass = E.GpgError
-    await cmd.run inargs, defer etmp, out
+    await cmd.run inargs, defer err, out
     cb err, out
 
   #----
