@@ -12,10 +12,9 @@ exports.set_log = set_log = (log) -> _log = log
 
 exports.Engine = class Engine
 
-  constructor : ({@args, @stdin, @stdout, @stderr}) ->
+  constructor : ({@args, @stdin, @stdout, @stderr, @name}) ->
 
-    # XXX make this configurable
-    @name = "gpg"
+    @name or= "gpg"
 
     @stderr or= new stream.FnOutStream(_log)
     @stdin or= new stream.NullInStream()
@@ -55,7 +54,18 @@ bufferify = (x) ->
 
 ##=======================================================================
 
-exports.gpg = gpg = ({args, stdin, stdout, stderr, quiet}, cb) ->
+# This is a little hack to universally deal with temporary keyrings,
+# if that's what's needed.
+_args_mutate  = null
+exports.set_args_mutate = (am) -> _args_mutate = am
+
+##=======================================================================
+
+exports.gpg = gpg = (inargs, cb) ->
+  
+  inargs = _args_mutate(inargs) if _args_mutate?
+  {args, stdin, stdout, stderr, quiet} = inargs
+
   if (b = bufferify stdin)?
     stdin = new stream.BufferInStream b
   if quiet
