@@ -46,7 +46,7 @@ exports.BufferOutStream = class BufferOutStream extends stream.Writable
 
 exports.FnOutStream = class FnOutStream extends stream.Writable
   constructor : (@fn, options) -> super options
-  _write : (dat, cb) -> 
+  _write : (dat, encoding, cb) -> 
     @fn dat
     cb()
 
