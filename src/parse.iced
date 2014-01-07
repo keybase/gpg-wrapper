@@ -49,9 +49,9 @@ exports.Parser = class Parser
 
 #=======================================================================
 
-exports.parse = parse = ({gpg, packet}, cb) ->
+exports.parse = parse = ({gpg, message }, cb) ->
   gpg or= new GPG 
-  await gpg.run { args : [ "--list-packets"], stdin : packet }, defer err, buf
+  await gpg.run { args : [ "--list-packets"], stdin : message }, defer err, buf
   packets = null
   unless err?
     try

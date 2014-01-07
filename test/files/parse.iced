@@ -2,7 +2,7 @@
 {parse} = require '../../lib/main'
 
 exports.test_parse = (T,cb) ->
-  packet = """
+  message = """
 -----BEGIN PGP MESSAGE-----
 Version: GnuPG/MacGPG2 v2.0.22 (Darwin)
 Comment: GPGTools - https://gpgtools.org
@@ -23,10 +23,10 @@ fWti
 =QoKV
 -----END PGP MESSAGE-----
 """
-  await parse { packet  }, defer err, msg
-  T.equal msg.packets().length, 4, "we got 4 packets"
-  types = (p.type for p in msg.packets())
+  await parse { message }, defer err, mout
+  T.equal mout.packets().length, 4, "we got 4 packets"
+  types = (p.type for p in mout.packets())
   T.equal types, [ 'compressed', 'onepass_sig', 'literal data', 'signature' ], "types are OK"
-  T.equal msg.packets()[1].options, "keyid 2FE01C454348DA39", "option correct on onepass_sig"
-  T.equal msg.packets()[2].subfields()[1], "raw data: 6 bytes", "subfield 1 on literal"
+  T.equal mout.packets()[1].options, "keyid 2FE01C454348DA39", "option correct on onepass_sig"
+  T.equal mout.packets()[2].subfields()[1], "raw data: 6 bytes", "subfield 1 on literal"
   cb()
