@@ -1,5 +1,5 @@
 
-{parse} = require '../../lib/parse'
+{parse} = require '../../lib/main'
 
 exports.test_parse = (T,cb) ->
   packet = """
