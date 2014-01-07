@@ -1,6 +1,6 @@
 {
   "name": "gpg-wrapper",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A small wrapper around the gpg CLI",
   "main": "lib/main.js",
   "scripts": {
@@ -14,6 +14,10 @@
     "iced-coffee-script" : "~1.6.3-j",
     "iced-error" : "~0.0.6",
     "pgp-utils" : "~0.0.4"
+  },
+  "devDependencies" : {
+    "iced-test" : ">=0.0.9",
+    "optimist" : "*"
   },
   "author": "Maxwell Krohn <themax@gmail.com>",
   "license": "BSD-3-Clause",

@@ -28,6 +28,7 @@ build: $(BUILD_STAMP)
 setup: 
 	npm install -d
 
-test:
+test: $(BUILD_STAMP)
+	$(ICED) test/run.iced
 
 .PHONY: test setup
