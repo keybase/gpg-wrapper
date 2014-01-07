@@ -16,6 +16,7 @@ $(BUILD_STAMP): \
         lib/err.js \
 	lib/gpg.js \
 	lib/main.js \
+	lib/parse.js \
 	lib/stream.js 
 	date > $@
 

@@ -8,3 +8,4 @@ exports.E = ie.make_errors
   PGP_ID_COLLISION : "PGP ID collision error"
   NOT_FOUND : "Key wasn't found"
   CMD : "Non-zero exit code"
+  PARSE : "parse error"
