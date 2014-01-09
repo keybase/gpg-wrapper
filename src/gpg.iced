@@ -28,8 +28,8 @@ exports.GPG = class GPG
 
   #----
 
-  assert_no_collision : (short_id, cb) ->
-    args = [ "-k", short_id ]
+  assert_no_collision : (id, cb) ->
+    args = [ "-k", "--with-colons", id ]
     await @run { args, quiet : true } , defer err, out
     if not err? and (n = (stream.grep { pattern : "/#{short_id}", buffer : out }).length) > 1
       err = new E.PgpIdCollisionError "Found two keys for ID=#{short_id}"
