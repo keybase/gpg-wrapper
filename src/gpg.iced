@@ -30,9 +30,20 @@ exports.GPG = class GPG
 
   assert_no_collision : (id, cb) ->
     args = [ "-k", "--with-colons", id ]
+    n = 0
     await @run { args, quiet : true } , defer err, out
-    if not err? and (n = (stream.grep { pattern : "/#{short_id}", buffer : out }).length) > 1
-      err = new E.PgpIdCollisionError "Found two keys for ID=#{short_id}"
+    if err? then # noop
+    else
+      cols = stream.colgrep {
+        patterns : {
+          0 : /^[sp]ub$/
+          4 : (new RegExp "^.*#{id}$", "i")
+        },
+        buffer : out,
+        separator : /:/
+      }
+      if (n = cols.length) > 1
+        err = new E.PgpIdCollisionError "Found two keys for ID=#{short_id}"
     cb err, n
 
   #----
