@@ -34,7 +34,7 @@ exports.GPG = class GPG
     await @run { args, quiet : true } , defer err, out
     if err? then # noop
     else
-      cols = stream.colgrep {
+      rows = stream.colgrep {
         patterns : {
           0 : /^[sp]ub$/
           4 : (new RegExp "^.*#{id}$", "i")
@@ -42,7 +42,7 @@ exports.GPG = class GPG
         buffer : out,
         separator : /:/
       }
-      if (n = cols.length) > 1
+      if (n = rows.length) > 1
         err = new E.PgpIdCollisionError "Found two keys for ID=#{short_id}"
     cb err, n
 
@@ -56,12 +56,17 @@ exports.GPG = class GPG
   #----
 
   read_uids_from_key : ({fingerprint}, cb) ->
-    args = [ "-k", fingerprint ]
+    args = [ "-k", "--with-colons", fingerprint ]
+    uids = []
     await @run { args, quiet : true } , defer err, out
     unless err?
-      pattern = /^uid\s+(.*)$/
-      lines = stream.grep { buffer : out, pattern }
-      out = (u for line in lines when (m = line.match pattern)? and (u = parse m[1])?)
-    cb err, out
+      rows = stream.colgrep {
+        patterns : { 0 : /uid/ },
+        buffer : out,
+        separator : /:/
+      } 
+      uids = (parse(row[9]) for row in rows)
+    cb err, uids
 
 ##=======================================================================
+
