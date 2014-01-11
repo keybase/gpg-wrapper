@@ -60,6 +60,7 @@ exports.grep = ({pattern, buffer}) ->
 ##=======================================================================
 
 exports.colgrep = colgrep = ({patterns, buffer, separator}) ->
+  separator or= /:/
   lines = buffer.toString('utf8').split '\n'
   indices = (parseInt(k) for k,v of patterns)
   max_index = Math.max indices... 
