@@ -12,9 +12,11 @@ lib/%.js: src/%.iced
 	$(ICED) -I browserify -c -o `dirname $@` $<
 
 $(BUILD_STAMP): \
+	lib/cmd.js \
         lib/err.js \
 	lib/gpg.js \
 	lib/main.js \
+	lib/parse.js \
 	lib/stream.js 
 	date > $@
 
@@ -26,6 +28,7 @@ build: $(BUILD_STAMP)
 setup: 
 	npm install -d
 
-test:
+test: $(BUILD_STAMP)
+	$(ICED) test/run.iced
 
 .PHONY: test setup

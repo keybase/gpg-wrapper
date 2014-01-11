@@ -46,13 +46,31 @@ exports.BufferOutStream = class BufferOutStream extends stream.Writable
 
 exports.FnOutStream = class FnOutStream extends stream.Writable
   constructor : (@fn, options) -> super options
-  _write : (dat) -> @fn dat
+  _write : (dat, encoding, cb) -> 
+    @fn dat
+    cb()
 
 ##=======================================================================
 
 exports.grep = ({pattern, buffer}) ->
   lines = buffer.toString('utf8').split '\n' 
   out = (line for line in lines when line.match pattern)
+  return out
+
+##=======================================================================
+
+exports.colgrep = colgrep = ({patterns, buffer, separator}) ->
+  lines = buffer.toString('utf8').split '\n'
+  indices = (parseInt(k) for k,v of patterns)
+  max_index = Math.max indices... 
+  out = []
+  for line in lines when (cols = line.split separator)? and (max_index < cols.length)
+    found = true
+    for k,v of patterns
+      unless cols[k].match v 
+        found = false
+        break
+    out.push cols if found
   return out
 
 ##=======================================================================
