@@ -8,7 +8,7 @@ class Log extends keyring.Log
 
 #-----------------------------------
 
-ring = null
+ring2 = ring = null
 key = null
 key_data = """
   -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -74,7 +74,7 @@ exports.test_import = (T,cb) ->
   key = ring.make_key {
     key_data,
     fingerprint,
-    username : "gavrillo"
+    username : "gavrilo"
   }
   await key.save defer err
   T.no_error err
@@ -86,6 +86,35 @@ exports.test_import = (T,cb) ->
 
 exports.test_verify = (T,cb) ->
   await key.verify_sig { sig, payload, which : "msg" }, defer err
+  T.no_error err
+  cb()
+
+#-----------------
+
+exports.test_read_uids = (T, cb) ->
+  await ring.read_uids_from_key { fingerprint }, defer err, uids
+  T.no_error err
+  T.equal uids.length, 1, "the right number of UIDs"
+  # Whoops, there was as typo when I made this key!
+  T.equal uids[0].username, "Gavirilo Princip" , "the right username"
+  cb()
+
+#-----------------
+
+exports.test_copy = (T,cb) ->
+  await keyring.TmpKeyRing.make defer err, ring2
+  T.no_error err
+  T.assert ring2, "keyring2 was made"
+  await ring2.read_uids_from_key { fingerprint }, defer err, uids
+  T.assert err, "ring2 should be empty"
+  key2 = key.copy_to_keyring ring2
+  await key2.save defer err
+  T.no_error err
+  await key2.load defer err
+  T.no_error
+  await key2.verify_sig { sig, payload, which : "key2" }, defer err
+  T.no_error err
+  await ring2.nuke defer err
   T.no_error err
   cb()
 

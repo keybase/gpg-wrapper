@@ -48,7 +48,12 @@ exports.Globals = class Globals
 
 _globals = new Globals {}
 globals = () -> _globals
-exports.init = (d) -> _globals = new Globals d
+
+#----------------
+
+exports.init = (d) -> 
+  _globals = new Globals d
+  _mring = new MasterKeyRing()
 
 #----------------
 
@@ -360,8 +365,9 @@ exports.MasterKeyRing = class MasterKeyRing extends BaseKeyRing
 
 ##=======================================================================
 
-_mring = new MasterKeyRing()
-exports.master_ring = master_ring = () -> _mring
+exports.master_ring = master_ring = () -> 
+  _mring = new MasterKeyRing() unless _mring?
+  return _mring
 
 ##=======================================================================
 
