@@ -1,13 +1,14 @@
 
 {gpg} = require './gpg'
 {make_esc} = require 'iced-error'
-mkdir_p = require('iced-utils').fs
+{mkdir_p} = require('iced-utils').fs
 {prng} = require 'crypto'
 {athrow,base64u} = require('pgp-utils').util
-{GE} = require './err'
+{E} = require './err'
 path = require 'path'
 fs = require 'fs'
-{BufferOutStream,GPG,colgrep} = require 'gpg-wrapper'
+{BufferOutStream,colgrep} = require './stream'
+{GPG} = require './gpg'
 util = require 'util'
 
 ##=======================================================================
@@ -21,7 +22,7 @@ states =
 
 ##=======================================================================
 
-class Log 
+exports.Log = class Log 
   constructor : ->
   debug : (x) -> console.error x
   warn : (x) -> console.error x
@@ -32,22 +33,30 @@ class Log
 
 exports.Globals = class Globals
 
-  constructor : ({@get_preserve_tmp_keyring, @log, @get_debug, @get_tmp_keyring_dir}) ->
+  constructor : ({@get_preserve_tmp_keyring, 
+                  @get_debug, 
+                  @get_tmp_keyring_dir,
+                  @get_key_klass,
+                  @log}) ->
     @get_preserve_tmp_keyring or= () -> false
     @log or= new Log
     @get_debug or= () -> false
     @get_tmp_keyring_dir or= () -> os.tmpdir()
+    @get_key_klass or= () -> GpgKey
 
 #----------------
 
-_globals = new Globals()
+_globals = new Globals {}
 globals = () -> _globals
-log = () -> globals().log
 exports.init = (d) -> _globals = new Globals d
+
+#----------------
+
+log = () -> globals().log
 
 ##=======================================================================
 
-class GpgKey 
+exports.GpgKey = class GpgKey 
 
   #-------------
 
@@ -62,7 +71,7 @@ class GpgKey
   fingerprint : () -> @_fingerprint
 
   # The 64-bit GPG key ID
-  key_id_64 : () -> @_key_id_64 or @fingerprint()[-16...]
+  key_id_64 : () -> @_key_id_64 or (if @fingerprint() then @fingerprint()[-16...] else null)
 
   # Something to load a key by
   load_id : () -> @key_id_64() or @fingerprint()
@@ -111,15 +120,9 @@ class GpgKey
       args = [ "-" + (if @_secret then 'K' else 'k'), "--with-colons", fp ]
       await @gpg { args, quiet : true }, defer err, out
       if err?
-        err = new GE.NoLocalKeyError (
-          if @_is_self then "You don't have a local key!"
-          else "the user #{@_username} doesn't have a local key"
-        )
+        err = new E.NotFoundError "Key for #{@to_string()} not found"
     else
-      err = new GE.NoRemoteKeyError (
-        if @_is_self then "You don't have a registered remote key! Try `keybase push`"
-        else "the user #{@_username} doesn't have a remote key"
-      )
+      err = new E.NoFingerprintError "No fingerprint given for #{@_username}"
     cb err
 
   #-------------
@@ -135,7 +138,7 @@ class GpgKey
         }
       }
       if rows.length is 0
-        err = new GE.VerifyError "No signature of #{@to_string()} by #{signing_key.to_string()}"
+        err = new E.VerifyError "No signature of #{@to_string()} by #{signing_key.to_string()}"
     cb err
 
   #-------------
@@ -176,7 +179,7 @@ class GpgKey
       await @gpg { args }, esc defer out
       rows = colgrep { buffer : out, patterns : { 0 : /^fpr$/ } }
       if (rows.length is 0) or not (@_fingerprint = rows[0][9])?
-        err = new GE.GpgError "Couldn't find GPG fingerprint for #{id}"
+        err = new E.GpgError "Couldn't find GPG fingerprint for #{id}"
       else
         @_state = states.LOADED
         log().debug "- Map #{id} -> #{@_fingerprint} via gpg"
@@ -247,12 +250,15 @@ class GpgKey
 
   #-------------
 
-  copy_to_keyring : (keyring) ->
+  to_data_dict : () ->
     d = {}
     d[k[1...]] = v for k,v of @ when k[0] is '_'
-    ret = new GpgKey d
-    ret._keyring = keyring
-    return ret
+    return d
+
+  #-------------
+
+  copy_to_keyring : (keyring) ->
+    return keyring.make_key @to_data_dict()
 
   #--------------
 
@@ -261,7 +267,7 @@ class GpgKey
     d = buf.toString('utf8')
     if (m = d.match(/Primary key fingerprint: (.*)/))? then fingerprint = m[1]
     else if (m = d.match(/using [RD]SA key ([A-F0-9]{16})/))? then ki64 = m[1]
-    else err = new GE.VerifyError "#{which}: can't parse PGP output in verify signature"
+    else err = new E.VerifyError "#{which}: can't parse PGP output in verify signature"
     return { err, ki64, fingerprint } 
 
   #--------------
@@ -273,9 +279,9 @@ class GpgKey
       await @gpg { args : [ "--fingerprint", "--keyid-format", "long", ki64 ] }, defer err, out
       if err? then # noop
       else if not (m = out.toString('utf8').match(/Key fingerprint = ([A-F0-9 ]+)/) )?
-        err = new GE.VerifyError "Querying for a fingerprint failed"
+        err = new E.VerifyError "Querying for a fingerprint failed"
       else if not (a = strip(m[1])) is (b = @fingerprint())
-        err = new GE.VerifyError "Fingerprint mismatch: #{a} != #{b}"
+        err = new E.VerifyError "Fingerprint mismatch: #{a} != #{b}"
       else
         log().debug "| Successful map of #{ki64} -> #{@fingerprint()}"
 
@@ -289,11 +295,12 @@ class GpgKey
 
   verify_sig : ({which, sig, payload}, cb) ->
     log().debug "+ GpgKey::verify_sig #{which}"
-    esc = make_esc cb, "GpgKEy::verify_sig"
+    esc = make_esc cb, "GpgKey::verify_sig"
     err = null
 
     stderr = new BufferOutStream()
-    await @gpg { args : [ "--decrypt", "--keyid-format", "long"], stdin : sig, stderr }, defer err, out
+    args = [ "--decrypt", "--keyid-format", "long", "--with-fingerprint"]
+    await @gpg { args, stdin : sig, stderr }, defer err, out
 
     # Check that the signature verified, and that the intended data came out the other end
     msg = if err? then "signature verification failed"
@@ -301,7 +308,7 @@ class GpgKey
     else null
 
     # If there's an exception, we can now throw out of this function
-    if msg? then await athrow (new GE.VerifyError "#{which}: #{msg}"), esc defer()
+    if msg? then await athrow (new E.VerifyError "#{which}: #{msg}"), esc defer()
 
     # Now we need to check that there's a short Key id 64, or a full fingerprint
     # in the stderr output of the verify command
@@ -311,7 +318,7 @@ class GpgKey
     else if ki64? 
       await @_verify_key_id_64 { which, ki64, sig }, esc defer()
     else if (a = strip(fingerprint)) isnt (b = @fingerprint())
-      err = new GE.VerifyError "#{which}: mismatched fingerprint: #{a} != #{b}"
+      err = new E.VerifyError "#{which}: mismatched fingerprint: #{a} != #{b}"
 
     log().debug "- GpgKey::verify_sig #{which} -> #{err}"
     cb err
@@ -329,12 +336,8 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   make_key : (opts) ->
     opts.keyring = @
-    return new GpgKey opts
-
-  #------
-
-  make_key_from_user : (user, secret) ->
-    return GpgKey.make_from_user { user, secret, keyring : @ }
+    klass = globals().get_key_klass()
+    return new klass opts
 
   #------
 
@@ -344,7 +347,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   gpg : (gargs, cb) ->
     log().debug "| Call to gpg: #{util.inspect gargs}"
-    gargs.quiet = false if gargs.quiet and log().get_debug()
+    gargs.quiet = false if gargs.quiet and globals().get_debug()
     await @run gargs, defer err, res
     cb err, res
 
@@ -394,6 +397,7 @@ class TmpKeyRingBase extends BaseKeyRing
     mode = 0o700
     log().debug "+ Make new temporary keychain"
     parent = globals().get_tmp_keyring_dir()
+    log().debug "| mkdir_p parent #{parent}"
     await mkdir_p parent, mode, defer err, made
     if err?
       log().error "Error making tmp keyring dir #{parent}: #{err.message}"
@@ -404,7 +408,7 @@ class TmpKeyRingBase extends BaseKeyRing
       if err?
         log().error "Failed to stat directory #{parent}: #{err.message}"
       else if (so.mode & 0o777) isnt mode
-        await fs.chmod dir, mode, defer err
+        await fs.chmod parent, mode, defer err
         if err?
           log().error "Failed to change mode of #{parent} to #{mode}: #{err.message}"
 
