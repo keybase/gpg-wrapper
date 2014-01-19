@@ -299,7 +299,8 @@ exports.GpgKey = class GpgKey
     err = null
 
     stderr = new BufferOutStream()
-    args = [ "--trusted-key", @key_id_64(), "--decrypt", "--keyid-format", "long", "--with-fingerprint"]
+    args = [ "--decrypt", "--keyid-format", "long", "--with-fingerprint"]
+    args.push("--trusted-key", @key_id_64()) if @keyring().is_temporary()
     await @gpg { args, stdin : sig, stderr }, defer err, out
 
     # Check that the signature verified, and that the intended data came out the other end
