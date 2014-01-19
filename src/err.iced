@@ -9,3 +9,5 @@ exports.E = ie.make_errors
   NOT_FOUND : "Key wasn't found"
   CMD : "Non-zero exit code"
   PARSE : "parse error"
+  VERIFY : "Signature verification error"
+  NO_FINGERPRINT : "No fingerprint found"

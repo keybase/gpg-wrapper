@@ -13,11 +13,12 @@ lib/%.js: src/%.iced
 
 $(BUILD_STAMP): \
 	lib/cmd.js \
-        lib/err.js \
+	lib/err.js \
 	lib/gpg.js \
+	lib/keyring.js \
 	lib/main.js \
 	lib/parse.js \
-	lib/stream.js 
+	lib/stream.js  
 	date > $@
 
 clean:
