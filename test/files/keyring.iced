@@ -4,6 +4,7 @@ keyring = require '../../lib/keyring'
 #-----------------------------------
 
 class Log extends keyring.Log
+  debug : (x) ->
 
 #-----------------------------------
 
