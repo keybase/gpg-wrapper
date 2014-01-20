@@ -61,7 +61,7 @@ exports.GPG = class GPG
     await @run { args, quiet : true } , defer err, out
     unless err?
       rows = stream.colgrep {
-        patterns : { 0 : /uid/ },
+        patterns : { 0 : /^uid|pub$/ },
         buffer : out,
         separator : /:/
       } 
