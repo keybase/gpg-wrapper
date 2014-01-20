@@ -67,7 +67,7 @@ exports.GPG = class GPG
         buffer : out,
         separator : /:/
       } 
-      uids = (parse(row[9]) for row in rows)
+      uids = (parse(col) for row in rows when ((col = row[9])? and col.length > 0))
     cb err, uids
 
 ##=======================================================================
