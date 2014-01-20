@@ -3,7 +3,7 @@
 {make_esc} = require 'iced-error'
 {mkdir_p} = require('iced-utils').fs
 {prng} = require 'crypto'
-{athrow,base64u} = require('pgp-utils').util
+{fpeq,athrow,base64u} = require('pgp-utils').util
 {E} = require './err'
 path = require 'path'
 fs = require 'fs'
@@ -336,7 +336,7 @@ exports.GpgKey = class GpgKey
     if err then #noop
     else if ki64? 
       await @_verify_key_id_64 { which, ki64, sig }, esc defer()
-    else if (a = strip(fingerprint)) isnt (b = @fingerprint())
+    else if not fpeq (a = fingerprint), (b = @fingerprint())
       err = new E.VerifyError "#{which}: mismatched fingerprint: #{a} != #{b}"
 
     log().debug "- GpgKey::verify_sig #{which} -> #{err}"
