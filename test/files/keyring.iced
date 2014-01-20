@@ -120,6 +120,22 @@ exports.test_copy = (T,cb) ->
 
 #-----------------
 
+exports.test_find = (T, cb) ->
+  await ring.find_keys { query : "gman@" }, defer err, id64s
+  T.no_error err
+  T.equal id64s, [ fingerprint[-16...] ], "got back the 1 and only right key"
+  cb()
+
+#-----------------
+
+exports.test_list = (T,cb) ->
+  await ring.list_keys defer err, id64s
+  T.no_error err
+  T.equal id64s, [ fingerprint[-16...] ], "got back the 1 and only right key"
+  cb()
+
+#-----------------
+
 exports.nuke_ring = (T,cb) ->
   await ring.nuke defer err
   T.no_error err

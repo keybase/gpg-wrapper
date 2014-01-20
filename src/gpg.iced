@@ -55,8 +55,10 @@ exports.GPG = class GPG
 
   #----
 
-  read_uids_from_key : ({fingerprint}, cb) ->
-    args = [ "-k", "--with-colons", fingerprint ]
+  read_uids_from_key : ({fingerprint, query }, cb) ->
+    args = [ "-k", "--with-colons" ]
+    if fingerprint? then args.push fingerprint
+    else if query? then args.push query
     uids = []
     await @run { args, quiet : true } , defer err, out
     unless err?

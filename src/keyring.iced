@@ -448,11 +448,21 @@ class TmpKeyRingBase extends BaseKeyRing
 
   #----------------------------
 
-  list_keys : (cb) ->
-    await @gpg { args : [ "-k", "--with-colons" ], list_keys : true }, defer err, out
+  find_keys : ({query}, cb) ->
+    args = [ "-k", "--with-colons" ]
+    args.push query if query
+    await @gpg { args, list_keys : true }, defer err, out
+    id64s = null
     unless err?
       rows = colgrep { buffer : out, patterns : { 0 : /^pub$/ }, separator : /:/ }
-      @_all_id_64s = (row[4] for row in rows)
+      id64s = (row[4] for row in rows)
+    cb err, id64s
+
+
+  #----------------------------
+
+  list_keys : (cb) ->
+    await @find_keys {}, defer err, @_all_id_64s
     cb err, @_all_id_64s
 
   #----------------------------
