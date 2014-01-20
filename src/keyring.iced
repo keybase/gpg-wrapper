@@ -149,6 +149,10 @@ exports.GpgKey = class GpgKey
 
   #-------------
 
+  set_keyring : (r) -> @_keyring = r
+
+  #-------------
+
   to_string : () -> [ @username(), @key_id_64() ].join "/"
 
   #-------------
@@ -223,7 +227,7 @@ exports.GpgKey = class GpgKey
     if signer?
       args.push "-u", signer.fingerprint()
     else
-      await @kerying().has_signing_key defer err, hsk
+      await @keyring().has_signing_key defer err, hsk
       if err? then skip = false
       else if hsk
         log().info "Not trying to sign key #{@to_string()} since there's no signing key available"
@@ -323,7 +327,7 @@ exports.GpgKey = class GpgKey
 
     # Check that the signature verified, and that the intended data came out the other end
     msg = if err? then "signature verification failed"
-    else if ((a = out.toString('utf8')) isnt (b = payload)) then "wrong payload: #{a} != #{b}"
+    else if ((a = out.toString('utf8')) isnt (b = payload)) then "wrong payload: #{a} != #{b} (#{a.length} v #{b.length})"
     else null
 
     # If there's an exception, we can now throw out of this function
@@ -354,19 +358,20 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   has_signing_key : (cb) ->
     err = null
     unless @_has_signing_key?
-      await @find_secret_keys {}, defer err, id64s
+      await @find_secret_keys {}, defer err, ids
       if err?
         log().warn "Issue listing secret keys: #{err.message}"
       else
-        @_has_signing_key = (ids64s.length > 0)
+        @_has_signing_key = (ids.length > 0)
     cb err, @_has_signing_key
 
   #------
 
   make_key : (opts) ->
-    opts.keyring = @
     klass = globals().get_key_klass()
-    return new klass opts
+    ret = new klass opts
+    ret.set_keyring @
+    return ret
 
   #------
 
@@ -399,6 +404,16 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
       rows = colgrep { buffer : out, patterns : { 0 : /^sec$/ }, separator : /:/ }
       id64s = (row[4] for row in rows)
     cb err, id64s
+
+  #----------------------------
+
+  list_fingerprints : (cb) ->
+    await @gpg { args : [ "--with-colons", "--fingerprint" ] }, defer err, out
+    ret = []
+    unless err?
+      rows = colgrep { buffer : out, patterns : { 0: /^fpr$/ } }
+      ret = (col for row in rows when ((col = row[9])? and col.length > 0))
+    cb err, ret
 
   #----------------------------
 
