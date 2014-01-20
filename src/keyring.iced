@@ -10,6 +10,7 @@ fs = require 'fs'
 {BufferOutStream,colgrep} = require './stream'
 {GPG} = require './gpg'
 util = require 'util'
+os = require 'os'
 
 ##=======================================================================
 
@@ -216,8 +217,20 @@ exports.GpgKey = class GpgKey
 
   sign_key : (signer, cb) ->
     log().debug "| GPG-signing #{@username()}'s key with your key"
-    args = [ "-u", signer.fingerprint(), "--sign-key", "--batch", "--yes", @fingerprint() ]
-    await @gpg { args, quiet : true }, defer err
+    args = ["--sign-key", "--batch", "--yes" ]
+    skip = false
+    err = null
+    if signer?
+      args.push "-u", signer.fingerprint()
+    else
+      await @kerying().has_signing_key defer err, hsk
+      if err? then skip = false
+      else if hsk
+        log().info "Not trying to sign key #{@to_string()} since there's no signing key available"
+        skip = false
+    unless skip
+      args.push @fingerprint()
+      await @gpg { args, quiet : true }, defer err
     cb err
 
   #-------------
@@ -329,14 +342,24 @@ exports.GpgKey = class GpgKey
     log().debug "- GpgKey::verify_sig #{which} -> #{err}"
     cb err
 
-  #-------
-
-
 ##=======================================================================
 
 exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   constructor : () ->
+    @_has_signing_key = null
+
+  #------
+
+  has_signing_key : (cb) ->
+    err = null
+    unless @_has_signing_key?
+      await @find_secret_keys {}, defer err, id64s
+      if err?
+        log().warn "Issue listing secret keys: #{err.message}"
+      else
+        @_has_signing_key = (ids64s.length > 0)
+    cb err, @_has_signing_key
 
   #------
 
@@ -348,6 +371,40 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   #------
 
   is_temporary : () -> false
+  tmp_dir : () -> os.tmpdir()
+
+  #----------------------------
+
+  find_keys : ({query}, cb) ->
+    args = [ "-k", "--with-colons" ]
+    args.push query if query
+    await @gpg { args, list_keys : true }, defer err, out
+    id64s = null
+    unless err?
+      rows = colgrep { buffer : out, patterns : { 0 : /^pub$/ }, separator : /:/ }
+      id64s = (row[4] for row in rows)
+    cb err, id64s
+
+  #----------------------------
+
+  find_secret_keys : ({query}, cb) ->
+    args = [ "-K", "--with-colons" ]
+    args.push query if query
+
+    # Don't give 'list_keys : false' since we want to check both keyrings.
+    await @gpg { args }, defer err, out
+
+    id64s = null
+    unless err?
+      rows = colgrep { buffer : out, patterns : { 0 : /^sec$/ }, separator : /:/ }
+      id64s = (row[4] for row in rows)
+    cb err, id64s
+
+  #----------------------------
+
+  list_keys : (cb) ->
+    await @find_keys {}, defer err, @_all_id_64s
+    cb err, @_all_id_64s
 
   #------
 
@@ -445,25 +502,9 @@ class TmpKeyRingBase extends BaseKeyRing
   #----------------------------
 
   is_temporary : () -> true
-
-  #----------------------------
-
-  find_keys : ({query}, cb) ->
-    args = [ "-k", "--with-colons" ]
-    args.push query if query
-    await @gpg { args, list_keys : true }, defer err, out
-    id64s = null
-    unless err?
-      rows = colgrep { buffer : out, patterns : { 0 : /^pub$/ }, separator : /:/ }
-      id64s = (row[4] for row in rows)
-    cb err, id64s
+  tmp_dir : () -> @dir
 
 
-  #----------------------------
-
-  list_keys : (cb) ->
-    await @find_keys {}, defer err, @_all_id_64s
-    cb err, @_all_id_64s
 
   #----------------------------
 
