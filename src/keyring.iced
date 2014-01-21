@@ -616,6 +616,11 @@ exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
   @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
 
+  verify_sig : ({sig}, cb) ->
+    args = [ "--decrypt", "--no-auto-key-locate" ]
+    await @gpg { args, stdin : sig, quiet : true }, defer err, out
+    cb err, out
+
 ##=======================================================================
 
 
