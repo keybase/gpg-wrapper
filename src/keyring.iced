@@ -228,10 +228,10 @@ exports.GpgKey = class GpgKey
       args.push "-u", signer.fingerprint()
     else
       await @keyring().has_signing_key defer err, hsk
-      if err? then skip = false
-      else if hsk
+      if err? then skip = true
+      else if not hsk
         log().info "Not trying to sign key #{@to_string()} since there's no signing key available"
-        skip = false
+        skip = true
     unless skip
       args.push @fingerprint()
       await @gpg { args, quiet : true }, defer err
