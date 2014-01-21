@@ -136,6 +136,16 @@ exports.test_list = (T,cb) ->
 
 #-----------------
 
+exports.test_one_shot = (T,cb) ->
+  await ring.make_oneshot_ring { query : fingerprint, single : true }, defer err, r1
+  T.no_error err
+  T.assert r1, "A ring came back"
+  await r1.nuke defer err
+  T.no_error err
+  cb()
+
+#-----------------
+
 exports.nuke_ring = (T,cb) ->
   await ring.nuke defer err
   T.no_error err

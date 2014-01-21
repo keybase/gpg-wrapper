@@ -380,6 +380,31 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #----------------------------
 
+  make_oneshot_ring_2 : ({keyblock, single}, cb) ->
+    esc = make_esc cb, "BaseKeyRing::_make_oneshot_ring_2"
+    await @gpg { args : [ "--import"], stdin : keyblock, quiet : 'true' }, esc defer()
+    await @list_fingerprints esc defer fps
+    n = fps.length
+    err = if n is 0 then new E.NotFoundError "key import failed"
+    else if single and n > 1 then new E.PgpIdCollisionError "too many keys found: #{n}"
+    else null
+    cb err
+
+  #----------------------------
+
+  make_oneshot_ring : ({query, single}, cb) ->
+    esc = make_esc cb, "BaseKeyRing::make_oneshot_ring"
+    args = [ "--export" , query ]
+    await @gpg { args }, esc defer keyblock
+    await TmpOneShotKeyRing.make esc defer ring
+    await ring.make_oneshot_ring_2 { keyblock, single }, defer err
+    if err?
+      await ring.nuke defer e2
+      log().warn "Error cleaning up keyring after failure: #{e2.message}" if e2?
+    cb err, ring
+
+  #----------------------------
+
   find_keys : ({query}, cb) ->
     args = [ "-k", "--with-colons" ]
     args.push query if query
@@ -519,8 +544,6 @@ class TmpKeyRingBase extends BaseKeyRing
   is_temporary : () -> true
   tmp_dir : () -> @dir
 
-
-
   #----------------------------
 
   nuke : (cb) ->
@@ -586,6 +609,12 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
   post_make : (cb) -> 
     await fs.writeFile @mkfile("pub.ring"), (new Buffer []), defer err
     cb err
+
+##=======================================================================
+
+exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
+
+  @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
 
 ##=======================================================================
 
