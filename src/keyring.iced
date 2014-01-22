@@ -1,6 +1,6 @@
 
 {gpg} = require './gpg'
-{make_esc} = require 'iced-error'
+{chain,make_esc} = require 'iced-error'
 {mkdir_p} = require('iced-utils').fs
 {prng} = require 'crypto'
 {fpeq,athrow,base64u} = require('pgp-utils').util
@@ -11,6 +11,7 @@ fs = require 'fs'
 {GPG} = require './gpg'
 util = require 'util'
 os = require 'os'
+{a_json_parse} = require('iced-utils').util
 
 ##=======================================================================
 
@@ -453,6 +454,22 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     gargs.quiet = false if gargs.quiet and globals().get_debug()
     await @run gargs, defer err, res
     cb err, res
+
+  #------
+
+  oneshot_verify : ({query, single, sig}, cb) ->
+    ring = null
+    clean = (cb) ->
+      if ring?
+        await ring.nuke defer err
+        log().warn "Error cleaning up 1-shot ring: #{err.message}" if err?
+      cb()
+    cb = chain cb, clean
+    esc = make_esc cb, "BaseKeyRing::oneshot_verify"
+    await @make_oneshot_ring { query, single }, esc defer ring
+    await ring.verify_sig { sig }, esc defer raw
+    await a_json_parse raw, esc defer json
+    cb null, json
 
 ##=======================================================================
 

@@ -51,6 +51,59 @@ Hz30FTkcaHWq7oPoHAWeYwA=
 
 #-----------------
 
+kaiser2 =
+  key_data : """
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG/MacGPG2 v2.0.22 (Darwin)
+Comment: GPGTools - https://gpgtools.org
+
+mQENBFLf0DYBCADGz/jWmSDY8c4yVorLgDXK1GpHmqmGOaacBjdSC0Os0+oBcvI7
+o7rVZkkOeHoLGfr4HaQ6iXF61PxMjRpvUmDMrznrYGnOsSiiY0S6IFmAoEnu7BqI
+2ZPQEwqxV4o9iQ6ttffh0LC/5IX3+0sXt6uWebAyE0fW3Rw1drSaElUdzXRu7/nw
+e75oLhNSVguLFMhhs6VvUglcYRsZJN+hNOW0oVOIBWHDCtI713U/wFepaOov0g48
+Ysj2gFLnhUMGPgb+yTKeDLvlQQCZoIXBWWTy7sM/LU0xsegP0Wpsv+aj7fNcoxYp
+tuqQwPOzu35B7J4++ECmQ0qoVND9j5iChA2xABEBAAG0IkthaXNlciBXaWxoZWxt
+IDxrYWlzZXIyQHlhaG9vLmNvbT6JAT0EEwEKACcFAlLf0DYCGwMFCRLMAwAFCwkI
+BwMFFQoJCAsFFgIDAQACHgECF4AACgkQY+EQEyiPLUiCcQf/REXdwDfJRHc7DpWJ
+M/o+NDke4d60gh3wtNRUWlsbAF/Xc1aZjEJt0xRIx3QJ8P5+FYfMsk2/05UfXmrg
+KE69AEP2x3FcbnkYeSG0jwbDi5h7such17SDxV9M/s4iHjJKBglyDxYltG2xZ8Xu
+NNTi2VkvvulrRcwonQr/hPDibMKIgY7Xrxw3nZK/pOOXaidcIvuoGpOd9w3UniGc
+zOzSi3CqTQrpf+5/p0rZE2tdJdNTm2MUww8FiUzpzdUfMAunVSpK1WazpWXkJ9sS
+4H6dE+GUWh71f4j69NNfzOG4YWQ6syjJ12BtlLRNl403LvPubhVaKr0gHF5wEeI0
+4h0YR7kBDQRS39A2AQgA6Vfl/9NBltJOxQ921rJJTqsjxW/chIX1HGYEYWRrJrfD
+iEoC1jYDOKmP6q6PYREeyhB1G5uER2FQnjtxY8Wo+BpwsJ+s/stgRZoHUM2AsmPb
+rnEt8J781trSjbTuySgRkqsQAQizhrsAq0jnpOCmAPVbsFvC4oV9kjiXDOet2j9j
+tfZ5FnfESqQ0tmrdIXvKaa3+jE5hnRvyhBrwyoYny6SBw4eqogUjQnUa1yo4X0Si
+dPmNDA6DdIFG6+OxR3emRNxeuYRq3oHJLAalGlhMQCn8QK1RyoyRqDcekMHB0hYV
+uNgxgta11hIdipBohrJIeKVcGKXt29XSnS0iWdm/DQARAQABiQElBBgBCgAPBQJS
+39A2AhsMBQkSzAMAAAoJEGPhEBMojy1I1t8H/3hXg/3WwN33iY1bodU8oXYVBbKG
+pjs/A/fP/H3+3MqG6z/sspUfXluS7baNRmg5HB300vMGqPRJ5EU5/anOu/EJxj1A
+NJpSiJnXyjwVx7EviMgLPlZC0HTYNPsiXZLe7p/WAWHy5HRH9iAgu0IOPon1MniV
+9lgJHsOS+zF+ostVB6PFglEJt4y7ySeFuxpRTi0ulYyO/LHW7nJZkl6xzpvykJws
+3it8W3ecYAodkySzgLN8zqS8nlqlsJgO/NYIQd3c67MKA+92A75VlCMJ25SrsaVm
+Enqh2naqYfmkmhWk5KInf02pSAwD5I/roTYO9kO1QjLrVj1d058K2/T2Z0o=
+=U857
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+  username : "kaiser2@yahoo.com"
+  fingerprint : "A03CC843D8425771B59F731063E11013288F2D48"
+  sig : """-----BEGIN PGP MESSAGE-----
+Version: GnuPG/MacGPG2 v2.0.22 (Darwin)
+Comment: GPGTools - https://gpgtools.org
+
+owEBQwG8/pANAwAKAWPhEBMojy1IAcsTYgBS39KUeyAid3ciIDogMSB9CokBHAQA
+AQoABgUCUt/SlAAKCRBj4RATKI8tSN+tB/90cxDDxC0PjoPqbO2ZrbI1q2FGyZI3
+Ayukt+u/cTadECcigJzE05ymKevKCVJFHASEp4SMn9nW4QSD5fTRcqo6QBfWImQi
+UYbirBvhejAARusJmLKtpmosxxsiEYQ1bcFJjx2+UQLr40uw5RHXfgP8CuUqadrw
+Wm+wqLwUwXxbrYb5FCZ8nziEUwOl2rpqV1NIj59D3BZps43Q5QCCTRZF5+eJJyg+
+AhyYGythrOMbYKWmRRGhIdy3QU34IHGxNh3o2bz6YBiM/JD8CY0M0HT33xU93LvB
+7UowhdY7p9M8R0Ql21T4+5AOxPxHQIypRKOl5oJPvZg8avtDT8sc5fRw
+=Uy2n
+-----END PGP MESSAGE-----
+"""
+
+#-----------------
+
 exports.init = (T, cb) ->
   keyring.init {
     get_preserve_tmp_keyring : () -> false
@@ -143,6 +196,17 @@ exports.test_one_shot = (T,cb) ->
   await r1.nuke defer err
   T.no_error err
   cb()
+
+#-----------------
+
+exports.test_oneshot_verify = (T,cb) ->
+  key = ring.make_key kaiser2
+  await key.save defer err
+  T.no_error err
+  await ring.oneshot_verify { query : kaiser2.username, single : true, sig : kaiser2.sig }, defer err, json
+  T.no_error err
+  T.equal {ww:1}, json, "JSON payload checked out"
+  cb()  
 
 #-----------------
 

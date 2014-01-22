@@ -12,9 +12,9 @@
   },
   "dependencies" : {
     "iced-coffee-script" : "~1.6.3-j",
-    "iced-error" : "~0.0.6",
+    "iced-error" : ">=0.0.7",
     "pgp-utils" : ">=0.0.7",
-    "iced-utils" : ">=0.1.4"
+    "iced-utils" : ">=0.1.6"
   },
   "devDependencies" : {
     "iced-test" : ">=0.0.9",
