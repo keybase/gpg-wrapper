@@ -483,6 +483,25 @@ exports.MasterKeyRing = class MasterKeyRing extends BaseKeyRing
 
 ##=======================================================================
 
+exports.KeyRing = class KeyRing extends BaseKeyRing
+
+  to_string : () -> "local ring @ #{@dir}"
+
+  constructor : (@dir) ->
+    super
+
+  mutate_args : (gargs) ->
+    gargs.args = [ "--homedir", @dir ].concat gargs.args
+    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
+
+##=======================================================================
+
+exports.make_ring = (d) ->
+  klass = if d? then KeyRing else MasterKeyRing
+  new klass d
+
+##=======================================================================
+
 exports.master_ring = master_ring = () -> 
   _mring = new MasterKeyRing() unless _mring?
   return _mring
