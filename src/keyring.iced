@@ -517,7 +517,7 @@ class TmpKeyRingBase extends BaseKeyRing
           log().error "Failed to change mode of #{parent} to #{mode}: #{err.message}"
 
     unless err?
-      nxt = base64u.encode prng 16
+      nxt = base64u.encode prng 15
       dir = path.join parent, nxt
       await fs.mkdir dir, mode, defer err
       log().debug "| making directory #{dir}"
