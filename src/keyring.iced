@@ -457,7 +457,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #------
 
-  oneshot_verify : ({query, single, sig}, cb) ->
+  oneshot_verify : ({query, single, sig, file}, cb) ->
     ring = null
     clean = (cb) ->
       if ring?
@@ -466,9 +466,13 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
       cb()
     cb = chain cb, clean
     esc = make_esc cb, "BaseKeyRing::oneshot_verify"
+    json = null
     await @make_oneshot_ring { query, single }, esc defer ring
-    await ring.verify_sig { sig }, esc defer raw
-    await a_json_parse raw, esc defer json
+    if file?
+      await ring.verify_sig_on_file { sig, file }, esc defer()
+    else
+      await ring.verify_and_decrypt_sig { sig }, esc defer raw
+      await a_json_parse raw, esc defer json
     cb null, json
 
 ##=======================================================================
@@ -634,11 +638,20 @@ exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
   @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
 
-  verify_sig : ({sig}, cb) ->
+  #---------------
+
+  verify_and_decrypt_sig : ({sig}, cb) ->
     args = [ "--decrypt", "--no-auto-key-locate" ]
     await @gpg { args, stdin : sig, quiet : true }, defer err, out
     cb err, out
 
+  #---------------
+  
+  verify_sig_on_file : ({ sig, file }, cb) ->
+    args = [ "--verify", sig, file ]
+    await @gpg { args, quiet : true }, defer err
+    cb err
+    
 ##=======================================================================
 
 
