@@ -517,7 +517,7 @@ class TmpKeyRingBase extends BaseKeyRing
           log().error "Failed to change mode of #{parent} to #{mode}: #{err.message}"
 
     unless err?
-      nxt = base64u.encode prng 12
+      nxt = base64u.encode prng 16
       dir = path.join parent, nxt
       await fs.mkdir dir, mode, defer err
       log().debug "| making directory #{dir}"
@@ -548,6 +548,7 @@ class TmpKeyRingBase extends BaseKeyRing
 
   nuke : (cb) ->
     unless @_nuked
+      log().debug "| nuking temporary kerying: #{@dir}"
       await fs.readdir @dir, defer err, files
       if err?
         log().error "Cannot read dir #{@dir}: #{err.message}"
