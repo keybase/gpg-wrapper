@@ -491,8 +491,8 @@ exports.KeyRing = class KeyRing extends BaseKeyRing
     super
 
   mutate_args : (gargs) ->
-    gargs.args = [ "--homedir", @dir ].concat gargs.args
     log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
+    gargs.args = [ "--homedir", @dir ].concat gargs.args
 
 ##=======================================================================
 
