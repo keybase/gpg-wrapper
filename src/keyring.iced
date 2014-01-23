@@ -81,7 +81,7 @@ exports.GpgKey = class GpgKey
   key_id_64 : () -> @_key_id_64 or (if @fingerprint() then @fingerprint()[-16...] else null)
 
   # Something to load a key by
-  load_id : () -> @key_id_64() or @fingerprint()
+  load_id : () -> @key_id_64() or @fingerprint() or @username()
 
   # The keybase username of the keyholder
   username : () -> @_username
@@ -483,21 +483,8 @@ exports.MasterKeyRing = class MasterKeyRing extends BaseKeyRing
 
 ##=======================================================================
 
-exports.KeyRing = class KeyRing extends BaseKeyRing
-
-  to_string : () -> "local ring @ #{@dir}"
-
-  constructor : (@dir) ->
-    super
-
-  mutate_args : (gargs) ->
-    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
-    gargs.args = [ "--homedir", @dir ].concat gargs.args
-
-##=======================================================================
-
 exports.make_ring = (d) ->
-  klass = if d? then KeyRing else MasterKeyRing
+  klass = if d? then AltKeyRing else MasterKeyRing
   new klass d
 
 ##=======================================================================
@@ -518,14 +505,13 @@ exports.load_key = (opts, cb) ->
 
 ##=======================================================================
 
-class TmpKeyRingBase extends BaseKeyRing
+class AltKeyRingBase extends BaseKeyRing
 
   constructor : (@dir) ->
-    @_nuked = false
 
   #------
 
-  to_string : () -> "tmp keyring #{@dir}"
+  to_string : () -> "keyring #{@dir}"
 
   #------
 
@@ -579,8 +565,32 @@ class TmpKeyRingBase extends BaseKeyRing
     await k2.save esc defer()
     cb()
 
-  #----------------------------
+  #------
 
+  # The GPG class will call this right before it makes a call to the shell/gpg.
+  # Now is our chance to talk about our special keyring
+  mutate_args : (gargs) ->
+    gargs.args = [
+      "--no-default-keyring",
+      "--keyring",            @mkfile("pubring.gpg"),
+      "--secret-keyring",     @mkfile("secring.gpg"),
+      "--trustdb-name",       @mkfile("trustdb.gpg")
+    ].concat gargs.args
+    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
+
+##=======================================================================
+
+class TmpKeyRingBase extends AltKeyRingBase
+
+  #----------------------------
+  
+  constructor : (dir) ->
+    super dir
+    @_nuked = false
+
+  #----------------------------
+  
+  to_string : () -> "tmp keyring #{@dir}"
   is_temporary : () -> true
   tmp_dir : () -> @dir
 
@@ -614,18 +624,11 @@ exports.TmpKeyRing = class TmpKeyRing extends TmpKeyRingBase
 
   @make : (cb) -> TmpKeyRingBase.make TmpKeyRing, cb
 
-  #------
+##=======================================================================
 
-  # The GPG class will call this right before it makes a call to the shell/gpg.
-  # Now is our chance to talk about our special keyring
-  mutate_args : (gargs) ->
-    gargs.args = [
-      "--no-default-keyring",
-      "--keyring",            @mkfile("pub.ring"),
-      "--secret-keyring",     @mkfile("sec.ring"),
-      "--trustdb-name",       @mkfile("trust.db")
-    ].concat gargs.args
-    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
+exports.AltKeyRing = class AltKeyRing extends AltKeyRingBase
+
+  @make : (cb) -> AltKeyRingBase.make AltKeyRing, cb
 
 ##=======================================================================
 
@@ -633,14 +636,14 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
   #------
 
-  @make : (cb) -> TmpKeyRingBase.make TmpPrimaryKeyRing, cb
+  @make : (cb) -> AltKeyRingBase.make TmpPrimaryKeyRing, cb
 
   #------
 
   # The GPG class will call this right before it makes a call to the shell/gpg.
   # Now is our chance to talk about our special keyring
   mutate_args : (gargs) ->
-    prepend = [ "--primary-keyring", @mkfile("pub.ring") ]
+    prepend = [ "--primary-keyring", @mkfile("pubring.gpg") ]
     if gargs.list_keys then prepend.push "--no-default-keyring"
     gargs.args = prepend.concat gargs.args
     log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
@@ -648,14 +651,14 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
   #------
 
   post_make : (cb) -> 
-    await fs.writeFile @mkfile("pub.ring"), (new Buffer []), defer err
+    await fs.writeFile @mkfile("pubring.gpg"), (new Buffer []), defer err
     cb err
 
 ##=======================================================================
 
 exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
-  @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
+  @make : (cb) -> AltKeyRingBase.make TmpOneShotKeyRing, cb
 
   #---------------
 
@@ -670,7 +673,7 @@ exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
     args = [ "--verify", sig, file ]
     await @gpg { args, quiet : true }, defer err
     cb err
-    
+
 ##=======================================================================
 
 

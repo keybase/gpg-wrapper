@@ -9,6 +9,8 @@ cmd = require './cmd'
 
 exports.GPG = class GPG
 
+  CMD : "gpg"
+
   #----
 
   constructor : () ->
@@ -21,10 +23,17 @@ exports.GPG = class GPG
 
   run : (inargs, cb) -> 
     @mutate_args inargs
-    inargs.name = "gpg"
+    inargs.name = @CMD
     inargs.eklass = E.GpgError
     await cmd.run inargs, defer err, out
     cb err, out
+
+  #----
+
+  command_line : (inargs) ->
+    @mutate_args inargs
+    v = [ @CMD ].concat inargs.args
+    v.join(" ")
 
   #----
 
