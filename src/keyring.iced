@@ -406,6 +406,32 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #----------------------------
 
+  find_keys_full : ( {query}, cb) ->
+    args = [ "-k", "--with-colons", "--fingerprint" ]
+    args.push query if query
+    await @gpg { args, list_keys : true }, defer err, out
+    res = null
+    unless err?
+      rows = colgrep { buffer : out, patterns : { 0 : /^(pub|uid|fpr)$/ }, separator : /:/ }
+      d = null
+      res = []
+      consume = (d) =>
+        res.push(@make_key d) if d?
+        {}
+      for row in rows      
+        if row[0] is 'pub'
+          d = consume d
+          d.key_id_64 = row[4]
+          d.uid = row[9] if row[9]?
+        else if row[0] is 'uid'
+          d.uid = row[9] if row[9]?
+        else if row[0] is 'fpr'
+          d.fingerprint = row[9] 
+      d = consume d
+    cb err, res
+
+  #----------------------------
+
   find_keys : ({query}, cb) ->
     args = [ "-k", "--with-colons" ]
     args.push query if query
