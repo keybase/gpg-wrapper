@@ -3,7 +3,9 @@
 {chain,make_esc} = require 'iced-error'
 {mkdir_p} = require('iced-utils').fs
 {prng} = require 'crypto'
-{fpeq,athrow,base64u} = require('pgp-utils').util
+pgp_utils = require('pgp-utils')
+{fpeq,athrow,base64u} = pgp_utils.util
+{userid} = pgp_utils
 {E} = require './err'
 path = require 'path'
 fs = require 'fs'
@@ -406,20 +408,22 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #----------------------------
 
-  find_keys_full : ( {query}, cb) ->
-    args = [ "-k", "--with-colons", "--fingerprint" ]
+  find_keys_full : ( {query, secret}, cb) ->
+    args = [ "--with-colons", "--fingerprint" ]
+    args.push if secret then "-K" else "-k"
     args.push query if query
     await @gpg { args, list_keys : true }, defer err, out
     res = null
     unless err?
-      rows = colgrep { buffer : out, patterns : { 0 : /^(pub|uid|fpr)$/ }, separator : /:/ }
+      rows = colgrep { buffer : out, patterns : { 0 : /^(sec|pub|uid|fpr)$/ }, separator : /:/ }
       d = null
       res = []
       consume = (d) =>
+        d.uid = userid.parse d.uid if d?.uid?
         res.push(@make_key d) if d?
         {}
       for row in rows      
-        if row[0] is 'pub'
+        if (secret and (row[0] is 'sec')) or (not(secret) and (row[0] is 'pub'))
           d = consume d
           d.key_id_64 = row[4]
           d.uid = row[9] if row[9]?
