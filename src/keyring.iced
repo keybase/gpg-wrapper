@@ -41,12 +41,17 @@ exports.Globals = class Globals
                   @get_debug, 
                   @get_tmp_keyring_dir,
                   @get_key_klass,
-                  @log}) ->
+                  @get_home_dir,
+                  @log}, @_mring = null) ->
     @get_preserve_tmp_keyring or= () -> false
     @log or= new Log
     @get_debug or= () -> false
     @get_tmp_keyring_dir or= () -> os.tmpdir()
     @get_key_klass or= () -> GpgKey
+    @get_home_dir or= () -> null
+
+  master_ring : () -> @_mring
+  set_master_ring : (r) -> @_mring = r
 
 #----------------
 
@@ -56,8 +61,7 @@ globals = () -> _globals
 #----------------
 
 exports.init = (d) -> 
-  _globals = new Globals d
-  _mring = new MasterKeyRing()
+  _globals = new Globals d, new MasterKeyRing()
 
 #----------------
 
@@ -511,6 +515,11 @@ exports.MasterKeyRing = class MasterKeyRing extends BaseKeyRing
 
   to_string : () -> "master keyring"
 
+  mutate_args : (gargs) ->
+    if (h = globals().get_home_dir())?
+      gargs.args = [ "--homedir", h ].concat gargs.args
+      log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
+
 ##=======================================================================
 
 exports.make_ring = (d) ->
@@ -519,9 +528,12 @@ exports.make_ring = (d) ->
 
 ##=======================================================================
 
-exports.master_ring = master_ring = () -> 
-  _mring = new MasterKeyRing() unless _mring?
-  return _mring
+exports.reset_master_ring = reset_master_ring = () ->
+  globals().set_master_ring new MasterKeyRing()
+
+#----------
+
+exports.master_ring = master_ring = () -> globals().master_ring()
 
 ##=======================================================================
 
