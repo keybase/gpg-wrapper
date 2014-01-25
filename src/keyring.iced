@@ -565,10 +565,12 @@ class AltKeyRingBase extends BaseKeyRing
 
   #------
 
-  @make : (klass, cb) ->
+  @make : (klass, dir, cb) ->
+    parent = path.dirname dir
+    nxt = path.basename dir
+
     mode = 0o700
     log().debug "+ Make new temporary keychain"
-    parent = globals().get_tmp_keyring_dir()
     log().debug "| mkdir_p parent #{parent}"
     await mkdir_p parent, mode, defer err, made
     if err?
@@ -585,7 +587,6 @@ class AltKeyRingBase extends BaseKeyRing
           log().error "Failed to change mode of #{parent} to #{mode}: #{err.message}"
 
     unless err?
-      nxt = base64u.encode prng 15
       dir = path.join parent, nxt
       await fs.mkdir dir, mode, defer err
       log().debug "| making directory #{dir}"
@@ -631,6 +632,12 @@ class TmpKeyRingBase extends AltKeyRingBase
     @_nuked = false
 
   #----------------------------
+
+  @make : (klass, cb) ->
+    dir = path.join globals().get_tmp_keyring_dir(), base64u.encode(prng(15))
+    AltKeyRingBase.make klass, dir, cb
+
+  #----------------------------
   
   to_string : () -> "tmp keyring #{@dir}"
   is_temporary : () -> true
@@ -670,7 +677,7 @@ exports.TmpKeyRing = class TmpKeyRing extends TmpKeyRingBase
 
 exports.AltKeyRing = class AltKeyRing extends AltKeyRingBase
 
-  @make : (cb) -> AltKeyRingBase.make AltKeyRing, cb
+  @make : (dir, cb) -> AltKeyRingBase.make AltKeyRing, dir, cb
 
 ##=======================================================================
 
@@ -678,7 +685,7 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
   #------
 
-  @make : (cb) -> AltKeyRingBase.make TmpPrimaryKeyRing, cb
+  @make : (cb) -> TmpKeyRingBase.make TmpPrimaryKeyRing, cb
 
   #------
 
@@ -700,7 +707,7 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
 exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
-  @make : (cb) -> AltKeyRingBase.make TmpOneShotKeyRing, cb
+  @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
 
   #---------------
 
