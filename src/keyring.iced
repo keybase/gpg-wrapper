@@ -424,6 +424,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
       res = []
       consume = (d) =>
         d.uid = userid.parse d.uid if d?.uid?
+        d.secret = secret if d? and secret
         res.push(@make_key d) if d?
         {}
       for row in rows      
@@ -707,7 +708,7 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
 exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
-  @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
+  @make : (cb) -> KeyRingBase.make TmpOneShotKeyRing, cb
 
   #---------------
 
