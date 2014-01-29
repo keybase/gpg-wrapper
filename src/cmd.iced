@@ -12,18 +12,19 @@ exports.set_log = set_log = (log) -> _log = log
 
 exports.Engine = class Engine
 
-  constructor : ({@args, @stdin, @stdout, @stderr, @name}) ->
+  constructor : ({@args, @stdin, @stdout, @stderr, @name, @opts}) ->
 
     @stderr or= new stream.FnOutStream(_log)
     @stdin or= new stream.NullInStream()
     @stdout or= new stream.NullOutStream()
+    @opts or= {}
 
     @_exit_code = null
     @_exit_cb = null
     @_n_out = 0
 
   run : () ->
-    @proc = spawn @name, @args
+    @proc = spawn @name, @args, @opts
     @stdin.pipe @proc.stdin
     @proc.stdout.pipe @stdout
     @proc.stderr.pipe @stderr

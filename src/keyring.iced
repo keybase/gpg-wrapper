@@ -708,7 +708,7 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
 exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
-  @make : (cb) -> KeyRingBase.make TmpOneShotKeyRing, cb
+  @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
 
   #---------------
 

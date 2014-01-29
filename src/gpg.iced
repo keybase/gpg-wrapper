@@ -23,8 +23,11 @@ exports.GPG = class GPG
 
   run : (inargs, cb) -> 
     @mutate_args inargs
+    env = process.env
+    delete env.LANGUAGE
     inargs.name = @CMD
     inargs.eklass = E.GpgError
+    inargs.opts = { env }
     await cmd.run inargs, defer err, out
     cb err, out
 
