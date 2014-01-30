@@ -171,6 +171,7 @@ exports.GpgKey = class GpgKey
   # Save this key to the underlying GPG keyring
   save : (cb) ->
     args = [ "--import" ]
+    args.push "--import-options", "import-local-sigs" if @_secret
     log().debug "| Save key #{@to_string()} to #{@keyring().to_string()}"
     await @gpg { args, stdin : @_key_data, quiet : true }, defer err
     @_state = states.SAVED
@@ -412,7 +413,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #----------------------------
 
-  find_keys_full : ( {query, secret}, cb) ->
+  find_keys_full : ( {query, secret, sigs}, cb) ->
     args = [ "--with-colons", "--fingerprint" ]
     args.push if secret then "-K" else "-k"
     args.push query if query
