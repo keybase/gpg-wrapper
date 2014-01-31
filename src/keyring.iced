@@ -696,8 +696,12 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
   mutate_args : (gargs) ->
     prepend = [ "--primary-keyring", @mkfile("pubring.gpg") ]
     if gargs.list_keys then prepend.push "--no-default-keyring"
-    if (h = globals().get_home_dir())?
-      prepend.push( "--homedir", h  )
+    else if (h = globals().get_home_dir())?
+      prepend = [ "--no-default-keyring",
+                  "--keyring",            path.join(h, "pubring.gpg"),
+                  "--secret-keyring",     path.join(h, "secring.gpg"),
+                  "--trustdb-name",       path.join(h, "trustdb.gpg")
+                ].concat prepend
     gargs.args = prepend.concat gargs.args
     log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
 
