@@ -191,6 +191,7 @@ exports.GpgKey = class GpgKey
     ]
     log().debug "| Load key #{@to_string()} from #{@keyring().to_string()} (secret=#{@_secret})"
     await @gpg { args }, esc defer @_key_data
+
     if not @fingerprint()?
       log().debug "+ lookup fingerprint"
       args = [ "-k", "--fingerprint", "--with-colons", id ]
@@ -198,9 +199,23 @@ exports.GpgKey = class GpgKey
       rows = colgrep { buffer : out, patterns : { 0 : /^fpr$/ } }
       if (rows.length is 0) or not (@_fingerprint = rows[0][9])?
         err = new E.GpgError "Couldn't find GPG fingerprint for #{id}"
+      else if (l = rows.length) > 1
+        err = new E.GpgError "Found more than one (#l) keys for #{id}"
       else
         @_state = states.LOADED
         log().debug "- Map #{id} -> #{@_fingerprint} via gpg"
+
+    if not @uid()?
+      log().debug "+ lookup UID"
+      await @read_uids_from_key esc defer uids
+      l = uids.length
+      if l is 0
+        log().debug "| weird; no UIDs found"
+      else
+        log().debug "| got back more than one UID; using the first: (#{JSON.stringify uids})" if l > 1
+        @_uid = uids[0]        
+        log().debug " - Map #{id} -> #{@_uid} via gpg"
+      log().debug "- looked up UID"
     cb err
 
   #-------------
