@@ -211,7 +211,7 @@ exports.test_oneshot_verify = (T,cb) ->
 #-----------------
 
 exports.test_import_by_username = (T,cb) ->
-  key = ring.make_key {username : "gman@theblackhand.io"}
+  key = ring.make_key {username : "<gman@theblackhand.io>"}
   await key.load defer err
   T.no_error err
   T.equal key.uid().username, 'Gavirilo Princip', "username came back correctly after load"
