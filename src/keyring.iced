@@ -242,7 +242,7 @@ exports.GpgKey = class GpgKey
 
   #-------------
 
-  sign_key : (signer, cb) ->
+  sign_key : ({signer}, cb) ->
     log().debug "| GPG-signing #{@username()}'s key with your key"
     args = ["--sign-key", "--batch", "--yes" ]
     skip = false
@@ -263,11 +263,11 @@ exports.GpgKey = class GpgKey
   #-------------
 
   # Assuming this is a temporary key, commit it to the master key chain, after signing it
-  commit : (signer, cb) ->
+  commit : ({signer, sign_key }, cb) ->
     esc = make_esc cb, "GpgKey::commit"
     if @keyring().is_temporary()
       log().debug "+ #{@to_string()}: Commit temporary key"
-      await @sign_key signer, esc defer()
+      await @sign_key { signer }, esc defer() if sign_key or signer?
       await @load esc defer()
       await @remove esc defer()
       await (@copy_to_keyring master_ring()).save esc defer()
