@@ -265,16 +265,20 @@ exports.GpgKey = class GpgKey
   # Assuming this is a temporary key, commit it to the master key chain, after signing it
   commit : ({signer, sign_key }, cb) ->
     esc = make_esc cb, "GpgKey::commit"
+    try_sign = sign_key or signer?
     if @keyring().is_temporary()
       log().debug "+ #{@to_string()}: Commit temporary key"
-      await @sign_key { signer }, esc defer() if sign_key or signer?
+      await @sign_key { signer }, esc defer() if try_sign
       await @load esc defer()
       await @remove esc defer()
       await (@copy_to_keyring master_ring()).save esc defer()
       log().debug "- #{@to_string()}: Commit temporary key"
-    else if not @_is_signed
-      log().debug "| #{@to_string()}: signing key, since it wasn't signed"
-      await @sign_key {signer}, esc defer()
+    else if not @_is_signed 
+      if try_sign
+        log().debug "| #{@to_string()}: signing key, since it wasn't signed"
+        await @sign_key {signer}, esc defer()
+      else
+        log().debug "| #{@to_string()}: key wasn't signed, but signing was skipping"
     else
       log().debug "| #{@to_string()}: key was previously commited; noop"
     cb null
