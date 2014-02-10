@@ -274,7 +274,7 @@ exports.GpgKey = class GpgKey
       log().debug "- #{@to_string()}: Commit temporary key"
     else if not @_is_signed
       log().debug "| #{@to_string()}: signing key, since it wasn't signed"
-      await @sign_key signer, esc defer()
+      await @sign_key {signer}, esc defer()
     else
       log().debug "| #{@to_string()}: key was previously commited; noop"
     cb null
