@@ -414,7 +414,11 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     n = fps.length
     err = if n is 0 then new E.NotFoundError "key import failed"
     else if single and n > 1 then new E.PgpIdCollisionError "too many keys found: #{n}"
-    else null
+    else 
+      @_fingerprint = fps[0]
+      # Eventually use PGP-utils for this, but for now....
+      @_key_id_64 = @_fingerprint[-16...]
+      null
     cb err
 
   #----------------------------
@@ -738,15 +742,19 @@ exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
   #---------------
 
+  base_args : () -> [ "--trusted-key", @_key_id_64 ]
+
+  #---------------
+
   verify_and_decrypt_sig : ({sig}, cb) ->
-    args = [ "--decrypt", "--no-auto-key-locate" ]
+    args = @base_args().concat [ "--decrypt", "--no-auto-key-locate" ]
     await @gpg { args, stdin : sig, quiet : true }, defer err, out
     cb err, out
 
   #---------------
   
   verify_sig_on_file : ({ sig, file }, cb) ->
-    args = [ "--verify", sig, file ]
+    args = @base_args().concat [ "--verify", sig, file ]
     await @gpg { args, quiet : true }, defer err
     cb err
 
