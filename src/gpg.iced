@@ -1,5 +1,5 @@
 
-{spawn} = require 'child_process'
+{exec} = require 'child_process'
 stream = require './stream'
 {E} = require './err'
 {parse} = require('pgp-utils').userid
@@ -13,11 +13,18 @@ exports.GPG = class GPG
 
   #----
 
-  constructor : () ->
+  constructor : (opts) ->
+    @CMD = c if (c = opts?.cmd)?
 
   #----
 
   mutate_args : (args) -> 
+
+  #----
+
+  test : (cb) ->
+    await exec "#{@CMD} --version", defer err, out
+    cb err, out
 
   #----
 
