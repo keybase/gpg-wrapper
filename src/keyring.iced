@@ -378,6 +378,7 @@ exports.GpgKey = class GpgKey
 exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   constructor : () ->
+    super()
     @_has_signing_key = null
 
   #------
@@ -575,6 +576,7 @@ exports.load_key = (opts, cb) ->
 class AltKeyRingBase extends BaseKeyRing
 
   constructor : (@dir) ->
+    super()
 
   #------
 

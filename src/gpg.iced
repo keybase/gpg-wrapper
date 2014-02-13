@@ -7,14 +7,17 @@ cmd = require './cmd'
 
 ##=======================================================================
 
-exports.GPG = class GPG
+_gpg_cmd = "gpg"
+exports.set_gpg_cmd = (c) -> _gpg_cmd = c
 
-  CMD : "gpg"
+##=======================================================================
+
+exports.GPG = class GPG
 
   #----
 
   constructor : (opts) ->
-    @CMD = c if (c = opts?.cmd)?
+    @CMD = if (c = opts?.cmd)? then c else _gpg_cmd
 
   #----
 
