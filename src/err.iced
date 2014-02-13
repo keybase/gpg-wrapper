@@ -11,3 +11,4 @@ exports.E = ie.make_errors
   PARSE : "parse error"
   VERIFY : "Signature verification error"
   NO_FINGERPRINT : "No fingerprint found"
+  CMD_NOT_FOUND : "The command wasn't found"
