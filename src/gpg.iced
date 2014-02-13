@@ -9,6 +9,7 @@ cmd = require './cmd'
 
 _gpg_cmd = "gpg"
 exports.set_gpg_cmd = (c) -> _gpg_cmd = c
+exports.get_gpg_cmd = ( ) -> _gpg_cmd
 
 ##=======================================================================
 
