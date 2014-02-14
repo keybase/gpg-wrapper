@@ -344,13 +344,13 @@ exports.GpgKey = class GpgKey
 
   verify_sig : ({which, sig, payload}, cb) ->
     log().debug "+ GpgKey::verify_sig #{which}"
-    esc = make_esc cb, "GpgKey::verify_sig"
     err = null
-
-    stderr = new BufferOutStream()
-    args = [ "--decrypt", "--keyid-format", "long", "--with-fingerprint"]
-    args.push("--trusted-key", @key_id_64()) if @keyring().is_temporary()
-    await @gpg { args, stdin : sig, stderr }, defer err, out
+    args = 
+      query : @fingerprint()
+      single : true
+      sig : sig
+      no_json : true
+    await @keyring().oneshot_verify args, defer err, out
 
     # Check that the signature verified, and that the intended data came out the other end
     msg = if err? then "signature verification failed"
@@ -358,17 +358,7 @@ exports.GpgKey = class GpgKey
     else null
 
     # If there's an exception, we can now throw out of this function
-    if msg? then await athrow (new E.VerifyError "#{which}: #{msg}"), esc defer()
-
-    # Now we need to check that there's a short Key id 64, or a full fingerprint
-    # in the stderr output of the verify command
-    {err, ki64, fingerprint} = @_find_key_in_stderr which, stderr.data()
-
-    if err then #noop
-    else if ki64? 
-      await @_verify_key_id_64 { which, ki64, sig }, esc defer()
-    else if not fpeq (a = fingerprint), (b = @fingerprint())
-      err = new E.VerifyError "#{which}: mismatched fingerprint: #{a} != #{b}"
+    if msg? then err = new E.VerifyError "#{which}: #{msg}"
 
     log().debug "- GpgKey::verify_sig #{which} -> #{err}"
     cb err
@@ -516,7 +506,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #------
 
-  oneshot_verify : ({query, single, sig, file}, cb) ->
+  oneshot_verify : ({query, single, sig, file, no_json}, cb) ->
     ring = null
     clean = (cb) ->
       if ring?
@@ -525,14 +515,17 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
       cb()
     cb = chain cb, clean
     esc = make_esc cb, "BaseKeyRing::oneshot_verify"
-    json = null
+    ret = null
     await @make_oneshot_ring { query, single }, esc defer ring
     if file?
       await ring.verify_sig_on_file { sig, file }, esc defer()
     else
       await ring.verify_and_decrypt_sig { sig }, esc defer raw
-      await a_json_parse raw, esc defer json
-    cb null, json
+      if no_json
+        ret = raw
+      else
+        await a_json_parse raw, esc defer ret
+    cb null, ret
 
 ##=======================================================================
 

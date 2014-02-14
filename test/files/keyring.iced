@@ -87,6 +87,8 @@ Enqh2naqYfmkmhWk5KInf02pSAwD5I/roTYO9kO1QjLrVj1d058K2/T2Z0o=
 """
   username : "kaiser2@yahoo.com"
   fingerprint : "A03CC843D8425771B59F731063E11013288F2D48"
+  payload_json : { ww : 1 }
+  payload : '{ "ww" : 1 }\n'
   sig : """-----BEGIN PGP MESSAGE-----
 Version: GnuPG/MacGPG2 v2.0.22 (Darwin)
 Comment: GPGTools - https://gpgtools.org
@@ -205,8 +207,15 @@ exports.test_oneshot_verify = (T,cb) ->
   T.no_error err
   await ring.oneshot_verify { query : kaiser2.username, single : true, sig : kaiser2.sig }, defer err, json
   T.no_error err
-  T.equal {ww:1}, json, "JSON payload checked out"
+  T.equal kaiser2.payload_json, json, "JSON payload checked out"
   cb()  
+
+#-----------------
+
+exports.test_verify_sig = (T,cb) ->
+  await key.verify_sig { which : "something", payload : kaiser2.payload, sig : kaiser2.sig }, defer err
+  T.no_error err
+  cb()
 
 #-----------------
 
