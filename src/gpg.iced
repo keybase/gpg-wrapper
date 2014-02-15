@@ -1,9 +1,8 @@
 
-{exec} = require 'child_process'
-stream = require './stream'
+{colgrep} = require './colgrep'
 {E} = require './err'
 {parse} = require('pgp-utils').userid
-cmd = require './cmd'
+ispawn = require 'iced-spawn'
 
 ##=======================================================================
 
@@ -27,7 +26,7 @@ exports.GPG = class GPG
   #----
 
   test : (cb) ->
-    await exec "#{@CMD} --version", defer err, out
+    await ispawn.run { name : @CMD, args : [ "--version" ], quiet : true }, defer err, out
     cb err, out
 
   #----
@@ -39,7 +38,7 @@ exports.GPG = class GPG
     inargs.name = @CMD
     inargs.eklass = E.GpgError
     inargs.opts = { env }
-    await cmd.run inargs, defer err, out
+    await ispawn.run inargs, defer err, out
     cb err, out
 
   #----
