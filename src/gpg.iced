@@ -56,7 +56,7 @@ exports.GPG = class GPG
     await @run { args, quiet : true } , defer err, out
     if err? then # noop
     else
-      rows = stream.colgrep {
+      rows = colgrep {
         patterns : {
           0 : /^[sp]ub$/
           4 : (new RegExp "^.*#{id}$", "i")
@@ -84,7 +84,7 @@ exports.GPG = class GPG
     uids = []
     await @run { args, quiet : true } , defer err, out
     unless err?
-      rows = stream.colgrep {
+      rows = colgrep {
         patterns : { 0 : /^uid|pub$/ },
         buffer : out,
         separator : /:/

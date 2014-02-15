@@ -1,9 +1,8 @@
 modules = [
-  require("./cmd")
   require("./err")
   require("./gpg")
   require("./parse")
-  require("./stream")
+  require("./colgrep")
 ]
 for m in modules
   for k,v of m
