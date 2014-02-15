@@ -11,15 +11,15 @@
     "url": "git://github.com/keybase/gpg-wrapper"
   },
   "dependencies": {
+    "iced-coffee-script": "~1.7.1",
     "iced-error": ">=0.0.7",
     "iced-spawn" : "~0.0.1",
     "iced-utils": ">=0.1.6",
     "pgp-utils": ">=0.0.7"
   },
   "devDependencies": {
-    "iced-coffee-script": "~1.7.0",
     "iced-test": ">=0.0.9",
-    "optimist": "*"
+    "minimist": "~0.0.7"
   },
   "author": "Maxwell Krohn <themax@gmail.com>",
   "license": "BSD-3-Clause",
