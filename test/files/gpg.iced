@@ -28,21 +28,20 @@ exports.test_success = (T,cb) ->
 exports.test_failure = (T,cb) ->
   x = new GPG { cmd : "no_way_jose" }
   await x.test defer err
-  T.assert err?, "failed to launch non-existant proc"
+  T.assert err?, "failed to launch non-existent proc"
   cb()
 
  exports.test_failure_2 = (T,cb) ->
   set_gpg_cmd "blah_blah"
   x = new GPG { }
   await x.test defer err
-  T.assert err?, "failed to launch non-existant proc"
+  T.assert err?, "failed to launch non-existent proc"
   cb()
 
 exports.test_success_2 = (T,cb) ->
   set_gpg_cmd "gpg"
   x = new GPG {}
   await x.test defer err
-  T.no_error err, "failed to launch non-existant proc"
+  T.no_error err, "and reset properly to standard gpg"
   cb()
 
-       
