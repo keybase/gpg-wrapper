@@ -1,6 +1,8 @@
 
 {EOL} = require('os')
-pgpu = reuqire 'pgp-utils'
+pgpu = require('pgp-utils').userid
+{Warnings} = require('iced-utils').util
+util = require 'util'
 
 #==========================================================
 
@@ -26,11 +28,18 @@ class BucketDict
 
 #==========================================================
 
+uniquify = (v) ->
+  h = {}
+  (h[e] = true for e in v)
+  (k for k of h)
+
+#==========================================================
+
 class Index
 
   constructor : () ->
-    @keys = []
-    @lookup = 
+    @_keys = []
+    @_lookup = 
       email : new BucketDict()
       fingerprint : new BucketDict()
       key_id_64 : new BucketDict()
@@ -39,14 +48,22 @@ class Index
     if (k = el.to_key()) then @index_key k
 
   index_key : (k) ->
-    @keys.push_back k
-    @lookup.fingerprint.add(k.fingerprint(), k)
-    @lookup.email.add(e, k) if (e = k.email())? and e.length
-    @lookup.key_id_64.add(k.key_id_64(), k)
+    @_keys.push k
+    @_lookup.fingerprint.add(k.fingerprint(), k)
+    for e in uniquify(k.emails())
+      @_lookup.email.add(e, k)
+    for i in k.all_key_id_64s()
+      @_lookup.key_id_64.add(i, k)
+
+  lookup : () -> @_lookup
 
 #==========================================================
 
 class Element
+  constructor : () ->
+    @_err = null
+  err : () -> @_err
+  is_ok : () -> not @_err?
   to_key : () -> null
 
 #==========================================================
@@ -54,20 +71,19 @@ class Element
 class BaseKey extends Element
 
   constructor : (line) ->
-    @_err = null
+    super()
     if line.v.length < 12
       @_err = new Error "Key is malformed; needs at least 12 fields"
     else
-      [ @_pub, @_trust, @_type, @_key_id_64, @_created, @_expires, ] = line.v
-      @_line = line
+      [ @_pub, @_trust, @_n_bits, @_type, @_key_id_64, @_created, @_expires, ] = line.v
 
   err : () -> @_err
-  to_key : () -> @
   to_key : () -> null
+  key_id_64 : () -> @_key_id_64
 
 #==========================================================
 
-class Subkey
+class Subkey extends BaseKey
 
 
 #==========================================================
@@ -76,12 +92,21 @@ class Key extends BaseKey
 
   constructor : (line) ->
     super line
+    @_userids = []
+    @_subkeys = []
     if @is_ok()
-      @_userid = pgpu.parse(line.v[9])
+      @add_uid line
 
-  email : () -> @_userid?.email()
-  key_id_64 : () -> @_key_id_64
+  emails : () -> (e for u in @_userids when (e = u.email)? )
+  fingerprint : () -> @_fingerprint
   to_key : () -> @
+  userids : () -> @_userids
+
+  all_keys : () -> [ @ ].concat(@_subkeys)
+
+  all_key_id_64s : () ->
+    ret = (i for s in @all_keys() when (i = s.key_id_64())?)
+    return ret
 
   add_line : (line) ->
     err = null
@@ -91,42 +116,62 @@ class Key extends BaseKey
       switch (f = line.v[0])
         when 'fpr' then @add_fingerprint line
         when 'uid' then @add_uid line
+        when 'uat' then # skip user attributes
+        when 'sub' then @add_subkey line
         else
           line.warn "unexpected subfield: #{f}"
 
+  add_fingerprint : (line) ->
+    @_fingerprint = line.get(9)
+
+  add_subkey : (line) ->
+    key = new Subkey line
+    if key.is_ok()
+      @_subkeys.push key
+    else
+      line.warn "Bad subkey: #{key.err().message}"
+
   add_uid : (line) ->
+    if (e = line.get(9))? and (u = pgpu.parse(e))?
+      @_userids.push u
 
 #==========================================================
 
 class Ignored extends Element
 
-  constructor : (@line) ->
+  constructor : (line) ->
 
 #==========================================================
 
 class Line
-  constructor : (txt, @number, parser) -> @v = txt.split(":")
-  warn : (m) -> parser.warn(@number + ": " + m)
+  constructor : (txt, @number, @parser) -> 
+    @v = txt.split(":")
+    if @v.length < 2
+      @warn "Bad line; expectect at least 2 fields"
+  warn : (m) -> @parser.warn(@number + ": " + m)
+  get : (n) ->
+    if (n < @v.length and @v[n].length) then @v[n] else null
 
 #==========================================================
 
-class Parser
+exports.Parser = class Parser
 
   #-----------------------
 
   constructor : (@txt) ->
-    @sec = if @txt[0]? is 'sec' then true else 'pub'
-    @warnings = new Warnings()
+    @_warnings = new Warnings()
+    @init()
 
   #-----------------------
 
-  warn : (w) -> @warnings.push w
+  warn : (w) -> @_warnings.push w
+  warnings : () -> @_warnings
 
   #-----------------------
 
-  init : () -> @lines = (new Line(l,i+1,@) for l,i in @txt.split(EOL))
+  init : () -> @lines = (new Line(l,i+1,@) for l,i in @txt.split(EOL) when l.length > 0)
   peek : () -> if @is_eof() then null else @lines[0]
-  get : () -> if @is_eof() then null else @lines.unshift()
+  get : () -> if @is_eof() then null else @lines.shift()
   is_eof : () -> (@lines.length is 0)
 
   #-----------------------
@@ -135,7 +180,7 @@ class Parser
 
   #-----------------------
 
-  parse_index : () ->
+  parse : () ->
     index = new Index()
     until @is_eof()
       index.push_element(element) if (element = @parse_element()) and element.is_ok()
@@ -143,7 +188,7 @@ class Parser
 
   #-----------------------
 
-  is_new_key : (line) -> line? and (line[0] is ['pub', 'sec'])
+  is_new_key : (line) -> line? and (line.get(0) in ['pub', 'sec'])
 
   #-----------------------
 
@@ -156,10 +201,14 @@ class Parser
 
   parse_key : (first_line) ->
     key = new Key first_line
-    go = true
-    while (nxt = @peek())? and not(is_new_key(nxt))
+    while (nxt = @peek())? and not(@is_new_key(nxt))
+      @get()
       key.add_line(nxt)
     return key
 
+#==========================================================
+
+exports.parse = parse = (txt) -> (new Parser(txt).parse())
 
 #==========================================================
+

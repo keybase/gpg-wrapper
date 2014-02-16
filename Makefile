@@ -15,6 +15,7 @@ $(BUILD_STAMP): \
 	lib/err.js \
 	lib/gpg.js \
 	lib/keyring.js \
+	lib/index.js \
 	lib/main.js \
 	lib/parse.js \
 	lib/colgrep.js  
