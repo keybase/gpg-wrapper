@@ -55,10 +55,10 @@ exports.parse = parse = ({gpg, message }, cb) ->
   packets = null
   unless err?
     try
-      message = (new Parser buf.toString('utf8')).run()
+      out = (new Parser buf.toString('utf8')).run()
     catch e
       err = e
-  cb err, message
+  cb err, out
       
 #=======================================================================
 
