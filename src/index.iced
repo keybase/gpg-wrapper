@@ -89,10 +89,12 @@ class Key extends BaseKey
       line.warn "got too few fields (#{n})"
     else
       switch (f = line.v[0])
-        when 'fpr' then @add_fingerprint line.v
-        when 'uid' then @add_uid line.v
+        when 'fpr' then @add_fingerprint line
+        when 'uid' then @add_uid line
         else
           line.warn "unexpected subfield: #{f}"
+
+  add_uid : (line) ->
 
 #==========================================================
 
