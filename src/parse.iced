@@ -1,4 +1,3 @@
-
 {E} = require './err'
 {GPG} = require './gpg'
 util = require 'util'
