@@ -24,6 +24,7 @@ fWti
 -----END PGP MESSAGE-----
 """
   await parse { message }, defer err, mout
+  T.no_error err
   T.equal mout.packets().length, 4, "we got 4 packets"
   types = (p.type for p in mout.packets())
   T.equal types, [ 'compressed', 'onepass_sig', 'literal data', 'signature' ], "types are OK"

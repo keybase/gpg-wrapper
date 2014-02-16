@@ -40,8 +40,7 @@ exports.Parser = class Parser
     rxx = /^:([a-zA-Z0-9_ -]+) packet:( (.*))?$/ 
     first = @get()
     unless (m = first.match rxx)
-      console.log first
-      throw new E.ParseError "expected ':literal data packet:' style header"
+      throw new E.ParseError "expected ':literal data packet:' style header; got #{first}"
     packet = new Packet { type : m[1], options : m[3] }
     until (@eof() or @peek()[0] is ':')
       packet.add_subfield strip(@get())
@@ -51,8 +50,8 @@ exports.Parser = class Parser
 
 exports.parse = parse = ({gpg, message }, cb) ->
   gpg or= new GPG 
+  out = null
   await gpg.run { args : [ "--list-packets"], stdin : message }, defer err, buf
-  packets = null
   unless err?
     try
       out = (new Parser buf.toString('utf8')).run()
