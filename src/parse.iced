@@ -30,7 +30,7 @@ exports.Parser = class Parser
     @preprocess()
     new Message @parse_packets()
 
-  preprocess : () -> @_lines = (line for line in @pgp_output.split("\n") when line.match /\S/)
+  preprocess : () -> @_lines = (line for line in @pgp_output.split(/\r?\n/) when line.match /\S/)
   parse_packets : () -> (@parse_packet() until @eof())
   peek : () -> @_lines[0]
   get : () -> @_lines.shift()
