@@ -12,10 +12,11 @@ class BucketDict
     @_d = {}
 
   add : (k,v) ->
+    k = k.toLowerCase()
     @_d[k] = b = [] unless (b = @_d[k])?
     b.push v
 
-  get : (k) -> @_d[k] or []
+  get : (k) -> @_d[k.toLowerCase()] or []
 
   get_0_or_1 : (k) ->
     l = @get(k)
