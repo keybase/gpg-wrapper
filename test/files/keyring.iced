@@ -228,6 +228,88 @@ exports.test_import_by_username = (T,cb) ->
 
 #-----------------
 
+exports.test_import_by_username_with_space = (T,cb) ->
+  key = ring.make_key keybase_v1_index
+  await key.save defer err
+  T.no_error err
+  key = ring.make_key {username : "(v1) <index@keybase.io>"}
+  await key.load defer err
+  T.no_error err
+  T.equal key.uid().username, 'Keybase.io Index Signing', "username came back correctly after load"
+  cb()
+
+#-----------------
+
+keybase_v1_index = 
+  key_data : """
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG/MacGPG2 v2.0.22 (Darwin)
+Comment: GPGTools - http://gpgtools.org
+
+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
+=kK8c
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+
+#-----------------
+
 exports.nuke_ring = (T,cb) ->
   await ring.nuke defer err
   T.no_error err
