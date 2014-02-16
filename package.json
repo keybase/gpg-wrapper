@@ -13,7 +13,7 @@
   "dependencies": {
     "iced-coffee-script": "~1.7.1",
     "iced-error": ">=0.0.7",
-    "iced-spawn": "~0.0.1",
+    "iced-spawn": ">=0.0.2",
     "iced-utils": ">=0.1.6",
     "pgp-utils": ">=0.0.7"
   },
