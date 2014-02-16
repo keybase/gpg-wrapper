@@ -14,6 +14,7 @@ fs = require 'fs'
 util = require 'util'
 os = require 'os'
 {a_json_parse} = require('iced-utils').util
+{Parser} = require('./index')
 
 ##=======================================================================
 
@@ -504,6 +505,17 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     gargs.quiet = false if gargs.quiet and globals().get_debug()
     await @run gargs, defer err, res
     cb err, res
+
+  #------
+
+  index : (cb) ->
+    await @gpg { args : [ "-k", "--with-fingerprint", "--with-colons" ], quiet : true }, defer err, out
+    i = w = null
+    unless err?
+      p = new Parser out.toString('utf8')
+      i = p.parse()
+      w = p.warnings()
+    cb err, i, w
 
   #------
 
