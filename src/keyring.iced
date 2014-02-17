@@ -264,7 +264,7 @@ exports.GpgKey = class GpgKey
   #-------------
 
   # Assuming this is a temporary key, commit it to the master key chain, after signing it
-  commit : ({signer, sign_key }, cb) ->
+  commit : ({signer, sign_key, ring }, cb) ->
     esc = make_esc cb, "GpgKey::commit"
     try_sign = sign_key or signer?
     if @keyring().is_temporary()
@@ -272,7 +272,8 @@ exports.GpgKey = class GpgKey
       await @sign_key { signer }, esc defer() if try_sign
       await @load esc defer()
       await @remove esc defer()
-      await (@copy_to_keyring master_ring()).save esc defer()
+      ring or= master_ring()
+      await (@copy_to_keyring ring).save esc defer()
       log().debug "- #{@to_string()}: Commit temporary key"
     else if not @_is_signed 
       if try_sign
@@ -597,35 +598,46 @@ class AltKeyRingBase extends BaseKeyRing
 
   #------
 
-  @make : (klass, dir, cb) ->
+  @make : (klass, dir, cb, opts) ->
+    opts or= {}
+    tmp = not opts.perm
+    type = if tmp then "temporary" else "permanent"
     parent = path.dirname dir
     nxt = path.basename dir
 
     mode = 0o700
-    log().debug "+ Make new temporary keychain"
+    log().debug "+ Make new #{type} keychain"
     log().debug "| mkdir_p parent #{parent}"
-    await mkdir_p parent, mode, defer err, made
+
+    # If we're making a temporary directory, we can silently
+    # make all parent directories, but we have to make the directory
+    # itself.  If we're making a permanent directory, we can
+    # make the target directory with mkdir_p and call it quits.
+    targ = if tmp then parent else dir 
+    await mkdir_p targ, mode, defer err, made
     if err?
-      log().error "Error making tmp keyring dir #{parent}: #{err.message}"
+      log().error "Error making keyring dir #{parent}: #{err.message}"
     else if made
-      log().info "Creating tmp keyring dir: #{parent}"
+      log().info "Creating #{type} keyring dir: #{tart}"
     else
-      await fs.stat parent, defer err, so
+      await fs.stat targ, defer err, so
       if err?
-        log().error "Failed to stat directory #{parent}: #{err.message}"
+        log().error "Failed to stat directory #{targ}: #{err.message}"
       else if (so.mode & 0o777) isnt mode
-        await fs.chmod parent, mode, defer err
+        await fs.chmod targ, mode, defer err
         if err?
           log().error "Failed to change mode of #{parent} to #{mode}: #{err.message}"
 
-    unless err?
+    # If all is well and we're in tmp mode, then we need to make this
+    # last directory, and fail with code EEXISTS if we fail to make it.
+    if not err? and tmp
       dir = path.join parent, nxt
       await fs.mkdir dir, mode, defer err
       log().debug "| making directory #{dir}"
       if err?
         log().error "Failed to make dir #{dir}: #{err.message}"
 
-    log().debug "- Made new temporary keychain"
+    log().debug "- Made new #{type} keychain"
     tkr = if err? then null else (new klass dir)
     if tkr? and not err?
       await tkr.post_make defer err
@@ -709,7 +721,7 @@ exports.TmpKeyRing = class TmpKeyRing extends TmpKeyRingBase
 
 exports.AltKeyRing = class AltKeyRing extends AltKeyRingBase
 
-  @make : (dir, cb) -> AltKeyRingBase.make AltKeyRing, dir, cb
+  @make : (dir, cb) -> AltKeyRingBase.make AltKeyRing, dir, cb, { perm : true }
 
 ##=======================================================================
 
