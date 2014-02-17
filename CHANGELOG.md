@@ -1,9 +1,16 @@
-## 0.0.29
+
+## 0.0.30 (2014-02-17)
+
+Bugfixes:
+
+	- We dropped set_log a while ago, when we moved spawn functionality into iced-spawn.
+	So add it back.
+
+## 0.0.29 (2014-02-17)
 
 Bugfixes
 
 	- More windows testing bugfixes
-
 
 ## 0.0.28 (2014-02-16)
 

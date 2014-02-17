@@ -42,6 +42,7 @@ exports.GPG = class GPG
     inargs.name = @CMD
     inargs.eklass = E.GpgError
     inargs.opts = { env }
+    inargs.log = _log if _log?
     await ispawn.run inargs, defer err, out
     cb err, out
 
