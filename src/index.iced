@@ -1,5 +1,4 @@
 
-{EOL} = require('os')
 pgpu = require('pgp-utils').userid
 {Warnings} = require('iced-utils').util
 util = require 'util'
@@ -170,7 +169,7 @@ exports.Parser = class Parser
 
   #-----------------------
 
-  init : () -> @lines = (new Line(l,i+1,@) for l,i in @txt.split(EOL) when l.length > 0)
+  init : () -> @lines = (new Line(l,i+1,@) for l,i in @txt.split(/\r?\n/) when l.length > 0)
   peek : () -> if @is_eof() then null else @lines[0]
   get : () -> if @is_eof() then null else @lines.shift()
   is_eof : () -> (@lines.length is 0)

@@ -228,14 +228,17 @@ exports.test_import_by_username = (T,cb) ->
 
 #-----------------
 
-exports.test_import_by_username_with_space = (T,cb) ->
-  key = ring.make_key keybase_v1_index
-  await key.save defer err
-  T.no_error err
-  key = ring.make_key {username : "(v1) <index@keybase.io>"}
-  await key.load defer err
-  T.no_error err
-  T.equal key.uid().username, 'Keybase.io Index Signing', "username came back correctly after load"
+exports.test_import_by_username_with_space_and_control_chars = (T,cb) ->
+  if process.platform is 'win32'
+    T.waypoint "skipped on windows :("
+  else
+    key = ring.make_key keybase_v1_index
+    await key.save defer err
+    T.no_error err
+    key = ring.make_key {username : "(v1) <index@keybase.io>"}
+    await key.load defer err
+    T.no_error err
+    T.equal key.uid().username, 'Keybase.io Index Signing', "username came back correctly after load"
   cb()
 
 #-----------------
