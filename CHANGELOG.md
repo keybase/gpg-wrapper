@@ -1,3 +1,12 @@
+## 0.0.0.28 (2014-02-16)
+
+Features:
+
+	- New indexing system; can read in the whole keychain with -k and then
+	  access the index in memory (close issue #3)
+	- Small tweaks and features additions for new keybase-node-installer version
+
+
 ## 0.0.27 (2014-02-15)
 
 Bugfixes:
