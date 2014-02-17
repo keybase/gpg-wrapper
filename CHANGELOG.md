@@ -1,4 +1,11 @@
-## 0.0.0.28 (2014-02-16)
+## 0.0.29
+
+Bugfixes
+
+	- More windows testing bugfixes
+
+
+## 0.0.28 (2014-02-16)
 
 Features:
 
