@@ -618,7 +618,7 @@ class AltKeyRingBase extends BaseKeyRing
     if err?
       log().error "Error making keyring dir #{parent}: #{err.message}"
     else if made
-      log().info "Creating #{type} keyring dir: #{tart}"
+      log().info "Creating #{type} keyring dir: #{targ}"
     else
       await fs.stat targ, defer err, so
       if err?
