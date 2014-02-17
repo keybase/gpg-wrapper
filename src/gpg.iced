@@ -10,6 +10,10 @@ _gpg_cmd = "gpg"
 exports.set_gpg_cmd = (c) -> _gpg_cmd = c
 exports.get_gpg_cmd = ( ) -> _gpg_cmd
 
+# A default log for uncaught stderr
+_log = null
+exports.set_log = (l) -> _log = l
+
 ##=======================================================================
 
 exports.GPG = class GPG
