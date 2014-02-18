@@ -645,6 +645,12 @@ class AltKeyRingBase extends BaseKeyRing
 
   #----------------------------
 
+  make_empty_pubring : (cb) ->
+    await fs.writeFile @mkfile("pubring.gpg"), (new Buffer []), defer err
+    cb err
+
+  #----------------------------
+
   copy_key : (k1, cb) ->
     esc = make_esc cb, "TmpKeyRing::copy_key"
     await k1.load esc defer()
@@ -723,6 +729,10 @@ exports.AltKeyRing = class AltKeyRing extends AltKeyRingBase
 
   @make : (dir, cb) -> AltKeyRingBase.make AltKeyRing, dir, cb, { perm : true }
 
+  #------
+
+  post_make : (cb) -> @make_empty_pubring cb
+
 ##=======================================================================
 
 exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
@@ -749,9 +759,7 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
   #------
 
-  post_make : (cb) -> 
-    await fs.writeFile @mkfile("pubring.gpg"), (new Buffer []), defer err
-    cb err
+  post_make : (cb) -> @make_empty_pubring cb
 
 ##=======================================================================
 
