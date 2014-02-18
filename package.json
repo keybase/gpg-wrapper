@@ -1,6 +1,6 @@
 {
   "name": "gpg-wrapper",
-  "version": "0.0.31",
+  "version": "0.0.32",
   "description": "A small wrapper around the gpg CLI",
   "main": "lib/main.js",
   "scripts": {
