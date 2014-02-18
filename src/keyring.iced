@@ -646,8 +646,20 @@ class AltKeyRingBase extends BaseKeyRing
   #----------------------------
 
   make_empty_pubring : (cb) ->
-    await fs.writeFile @mkfile("pubring.gpg"), (new Buffer []), defer err
-    cb err
+    f = @mkfile("pubring.gpg")
+    log().debug "+ Make/check empty pubring #{f}"
+    ok = true
+    await fs.open f, "ax", 0o600, defer err, fd
+    if not err?
+      log().debug "| Made a new one"
+    else if err.code is "EEXIST"
+      log().debug "| Found one"
+    else
+      log().warn "Unexpected error code from file touch #{f}: #{err.message}"
+      ok = false
+    if fd >= 0 and not err? then fs.close(fd)
+    log().debug "- Made/check empty pubring -> #{ok}"
+    cb null
 
   #----------------------------
 

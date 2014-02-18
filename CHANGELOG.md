@@ -1,3 +1,14 @@
+## 0.0.31 (2014-02-18)
+
+Bugfixes:
+
+  - More robust and secure file-touching mechanism for new Alt primary key dirs
+
+## 0.0.31 (2014-02-18)
+
+Bugfixes:
+
+  - Issues with Alt primary dirs on windows being created for the first time.
 
 ## 0.0.30 (2014-02-17)
 
