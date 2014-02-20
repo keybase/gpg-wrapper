@@ -36,6 +36,7 @@ exports.GPG = class GPG
   #----
 
   run : (inargs, cb) -> 
+    stderr = null
     @mutate_args inargs
     env = process.env
     delete env.LANGUAGE
@@ -43,7 +44,10 @@ exports.GPG = class GPG
     inargs.eklass = E.GpgError
     inargs.opts = { env }
     inargs.log = _log if _log?
+    inargs.stderr = stderr = new ispawn.BufferOutStream() if not inargs.stderr? and inargs.quiet
     await ispawn.run inargs, defer err, out
+    if err? and stderr?
+      err.stderr = stderr.data()
     cb err, out
 
   #----
