@@ -1,3 +1,9 @@
+## 0.0.33 (2014-02-25)
+
+Bugfixes:
+
+  - Upgrade to pgp-utils v0.0.15 to allow null emails
+
 ## 0.0.32 (2014-02-20)
 
 Features :
