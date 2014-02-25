@@ -4,13 +4,13 @@ Bugfixes:
 
   - Upgrade to pgp-utils v0.0.15 to allow null emails
 
-## 0.0.32 (2014-02-20)
+## 0.0.33 (2014-02-20)
 
 Features :
  
   - If quiet is on, and there's an error, we'll pass stderr back via the Error object.
 
-## 0.0.31 (2014-02-18)
+## 0.0.32 (2014-02-18)
 
 Bugfixes:
 
