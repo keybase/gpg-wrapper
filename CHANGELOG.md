@@ -1,3 +1,9 @@
+## 0.0.35 (2014-02-26)
+
+Features:
+
+  - When loading keys, store all UIDs, not just the first, in the in-memory argument
+
 ## 0.0.34 (2014-02-25)
 
 Bugfixes:

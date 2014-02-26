@@ -96,6 +96,9 @@ exports.GpgKey = class GpgKey
   # The keybase UID of the keyholder
   uid : () -> @_uid
 
+  # All uids, available after a load from the keyring
+  all_uids : () -> @_all_uids
+
   # Return the raw armored PGP key data
   key_data : () -> @_key_data
 
@@ -216,6 +219,7 @@ exports.GpgKey = class GpgKey
         log().debug "| got back more than one UID; using the first: (#{JSON.stringify uids})" if l > 1
         @_uid = uids[0]        
         log().debug " - Map #{id} -> #{@_uid} via gpg"
+      @_all_uids = uids
       log().debug "- looked up UID"
     cb err
 
