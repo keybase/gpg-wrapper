@@ -406,7 +406,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   make_oneshot_ring_2 : ({keyblock, single}, cb) ->
     esc = make_esc cb, "BaseKeyRing::_make_oneshot_ring_2"
-    await @gpg { args : [ "--import"], stdin : keyblock, quiet : 'true' }, esc defer()
+    await @gpg { args : [ "--import"], stdin : keyblock, quiet : true }, esc defer()
     await @list_fingerprints esc defer fps
     n = fps.length
     err = if n is 0 then new E.NotFoundError "key import failed"
@@ -422,7 +422,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   make_oneshot_ring : ({query, single}, cb) ->
     esc = make_esc cb, "BaseKeyRing::make_oneshot_ring"
-    args = [ "--export" , query ]
+    args = [ "-a", "--export" , query ]
     await @gpg { args }, esc defer keyblock
     await TmpOneShotKeyRing.make esc defer ring
     await ring.make_oneshot_ring_2 { keyblock, single }, defer err
