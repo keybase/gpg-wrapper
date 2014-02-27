@@ -1,3 +1,10 @@
+## 0.0.36 (2014-02-27)
+
+Bugfixes:
+  
+  - Export armored PGP data, we were forgetting to do so in a couple of cases.
+  - Use the iced-spawn@0.0.5 workaround to closing stdin bug on node 0.10.x
+
 ## 0.0.35 (2014-02-26)
 
 Features:
