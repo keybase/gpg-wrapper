@@ -423,7 +423,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   make_oneshot_ring : ({query, single}, cb) ->
     esc = make_esc cb, "BaseKeyRing::make_oneshot_ring"
     args = [ "-a", "--export" , query ]
-    await @gpg { args }, esc defer keyblock
+    await @gpg { args, quiet : true }, esc defer keyblock
     await TmpOneShotKeyRing.make esc defer ring
     await ring.make_oneshot_ring_2 { keyblock, single }, defer err
     if err?
