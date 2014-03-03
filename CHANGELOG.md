@@ -1,3 +1,11 @@
+### 0.0.37
+
+Features:
+
+  - Do not print secret keys to stderr in debug
+  - New `QuarantinedKeyRing` type that corresponds to incoming public keys that are
+    not yet kosher.# 0.0.36 (2014-02-27)
+
 ## 0.0.36 (2014-02-27)
 
 Bugfixes:

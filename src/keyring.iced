@@ -1,16 +1,15 @@
 
-{gpg} = require './gpg'
+{GPG,gpg} = require './gpg'
 {chain,make_esc} = require 'iced-error'
 {mkdir_p} = require('iced-utils').fs
 {prng} = require 'crypto'
 pgp_utils = require('pgp-utils')
-{fpeq,athrow,base64u} = pgp_utils.util
+{fingerprint_to_key_id_64,fpeq,athrow,base64u} = pgp_utils.util
 {userid} = pgp_utils
 {E} = require './err'
 path = require 'path'
 fs = require 'fs'
 {colgrep} = require './colgrep'
-{GPG} = require './gpg'
 util = require 'util'
 os = require 'os'
 {a_json_parse} = require('iced-utils').util
@@ -177,7 +176,7 @@ exports.GpgKey = class GpgKey
     args = [ "--import" ]
     args.push "--import-options", "import-local-sigs" if @_secret
     log().debug "| Save key #{@to_string()} to #{@keyring().to_string()}"
-    await @gpg { args, stdin : @_key_data, quiet : true }, defer err
+    await @gpg { args, stdin : @_key_data, quiet : true, secret : @_secret }, defer err
     @_state = states.SAVED
     cb err
 
@@ -356,10 +355,18 @@ exports.GpgKey = class GpgKey
       single : true
       sig : sig
       no_json : true
-    await @keyring().oneshot_verify args, defer err, out
+      keyblock : @_key_data
+      secret : @_secret
+    await @keyring().oneshot_verify args, defer err, out, fp
+
+    if not err? and not(@_fingerprint?) and fp?
+      @_fingerprint = fp
+      log().debug "| Setting fingerprint to #{fp} as a result of oneshot_verify"
 
     # Check that the signature verified, and that the intended data came out the other end
     msg = if err? then "signature verification failed"
+    else if @_fingerprint? and (@_fingerprint.toLowerCase() isnt fp.toLowerCase())
+      "Wrong key fingerprint; was the server lying? #{@_fingerprint} != #{fp}"
     else if ((a = out.toString('utf8')) isnt (b = payload)) then "wrong payload: #{a} != #{b} (#{a.length} v #{b.length})"
     else null
 
@@ -404,9 +411,9 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #----------------------------
 
-  make_oneshot_ring_2 : ({keyblock, single}, cb) ->
+  make_oneshot_ring_2 : ({keyblock, single, secret}, cb) ->
     esc = make_esc cb, "BaseKeyRing::_make_oneshot_ring_2"
-    await @gpg { args : [ "--import"], stdin : keyblock, quiet : true }, esc defer()
+    await @gpg { args : [ "--import"], stdin : keyblock, quiet : true, secret }, esc defer()
     await @list_fingerprints esc defer fps
     n = fps.length
     err = if n is 0 then new E.NotFoundError "key import failed"
@@ -416,20 +423,21 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
       # Eventually use PGP-utils for this, but for now....
       @_key_id_64 = @_fingerprint[-16...]
       null
-    cb err
+    cb err, @_fingerprint
 
   #----------------------------
 
-  make_oneshot_ring : ({query, single}, cb) ->
+  make_oneshot_ring : ({query, single, keyblock, secret}, cb) ->
     esc = make_esc cb, "BaseKeyRing::make_oneshot_ring"
-    args = [ "-a", "--export" , query ]
-    await @gpg { args, quiet : true }, esc defer keyblock
+    unless keyblock?
+      args = [ "-a", "--export" , query ]
+      await @gpg { args }, esc defer keyblock
     await TmpOneShotKeyRing.make esc defer ring
-    await ring.make_oneshot_ring_2 { keyblock, single }, defer err
+    await ring.make_oneshot_ring_2 { keyblock, single, secret }, defer err, fp
     if err?
       await ring.nuke defer e2
       log().warn "Error cleaning up keyring after failure: #{e2.message}" if e2?
-    cb err, ring
+    cb err, ring, fp
 
   #----------------------------
 
@@ -505,8 +513,18 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #------
 
+  safe_inspect : (gargs) ->
+    d = {}
+    for k,v of gargs
+      if (k is 'stdin') and gargs.secret
+        v = "<redacted>"
+      d[k] = v
+    util.inspect d
+
+  #------
+
   gpg : (gargs, cb) ->
-    log().debug "| Call to gpg: #{util.inspect gargs}"
+    log().debug "| Call to gpg: #{@safe_inspect gargs}"
     gargs.quiet = false if gargs.quiet and globals().get_debug()
     await @run gargs, defer err, res
     cb err, res
@@ -524,7 +542,22 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #------
 
-  oneshot_verify : ({query, single, sig, file, no_json}, cb) ->
+  oneshot_verify_2 : ({ring, sig, file, no_json}, cb) ->
+    err = ret = null
+    if file?
+      await ring.verify_sig_on_file { sig, file }, defer err
+    else
+      await ring.verify_and_decrypt_sig { sig }, defer err, raw
+      if err? then # noop
+      else if no_json then ret = raw
+      else
+        await a_json_parse raw, defer err, ret
+    cb err, ret
+
+  #------
+
+  oneshot_verify : ({query, single, sig, file, no_json, keyblock, secret}, cb) ->
+    log().debug "+ oneshot verify"
     ring = null
     clean = (cb) ->
       if ring?
@@ -534,16 +567,10 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     cb = chain cb, clean
     esc = make_esc cb, "BaseKeyRing::oneshot_verify"
     ret = null
-    await @make_oneshot_ring { query, single }, esc defer ring
-    if file?
-      await ring.verify_sig_on_file { sig, file }, esc defer()
-    else
-      await ring.verify_and_decrypt_sig { sig }, esc defer raw
-      if no_json
-        ret = raw
-      else
-        await a_json_parse raw, esc defer ret
-    cb null, ret
+    await @make_oneshot_ring { query, single, keyblock, secret }, esc defer ring, fp
+    await @oneshot_verify_2 { ring, sig, file, no_json }, esc defer ret
+    log().debug "- oneshot verify -> ok! (fp=#{fp})"
+    cb null, ret, fp
 
 ##=======================================================================
 
@@ -800,6 +827,28 @@ exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
     args = @base_args().concat [ "--verify", sig, file ]
     await @gpg { args, quiet : true }, defer err
     cb err
+
+##=======================================================================
+
+exports.QuarantinedKeyRing = class QuarantinedKeyRing extends TmpOneShotKeyRing
+
+  @make : (cb) -> TmpKeyRingBase.make QuarantinedKeyRing, cb
+
+  #------------------------
+
+  set_fingerprint : (fp) -> 
+    @_fingerprint = fp
+    @_key_id_64 = fingerprint_to_key_id_64 fp
+
+  #------------------------
+
+  # No need to make a true one-shot keyring if we have a Sequestered key,
+  # since there's guaranteed to only have one key there.
+  oneshot_verify : ({query, single, sig, file, no_json, keyblock}, cb) ->
+    log().debug "+ Quarantined / oneshot verify"
+    await @oneshot_verify_2 { ring : @, sig, file, no_json }, defer err, ret
+    log().debug "- Quarantined / oneshot verify -> ok! (fp=#{@_fingerprint})"
+    cb err, ret, @_fingerprint
 
 ##=======================================================================
 
