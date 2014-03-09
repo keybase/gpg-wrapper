@@ -1,4 +1,4 @@
-## 0.0.37
+### 0.0.37 (2014-03-03)
 
 Features:
 
@@ -6,7 +6,14 @@ Features:
   - New `QuarantinedKeyRing` type that corresponds to incoming public keys that are
     not yet kosher.
 
-## 0.0.36 (2014-02-26)
+## 0.0.36 (2014-02-27)
+
+Bugfixes:
+  
+  - Export armored PGP data, we were forgetting to do so in a couple of cases.
+  - Use the iced-spawn@0.0.5 workaround to closing stdin bug on node 0.10.x
+
+## 0.0.35 (2014-02-26)
 
 Features:
 

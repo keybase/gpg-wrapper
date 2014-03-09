@@ -11,11 +11,11 @@ class BucketDict
     @_d = {}
 
   add : (k,v) ->
-    k = k.toLowerCase()
+    k = ("" + k).toLowerCase()
     @_d[k] = b = [] unless (b = @_d[k])?
     b.push v
 
-  get : (k) -> @_d[k.toLowerCase()] or []
+  get : (k) -> @_d[("" + k).toLowerCase()] or []
 
   get_0_or_1 : (k) ->
     l = @get(k)
@@ -68,6 +68,10 @@ class Element
 
 #==========================================================
 
+parse_int = (s) -> if s?.match /^[0-9]+/ then parseInt(s, 10) else s
+
+#==========================================================
+
 class BaseKey extends Element
 
   constructor : (line) ->
@@ -75,7 +79,8 @@ class BaseKey extends Element
     if line.v.length < 12
       @_err = new Error "Key is malformed; needs at least 12 fields"
     else
-      [ @_pub, @_trust, @_n_bits, @_type, @_key_id_64, @_created, @_expires, ] = line.v
+      v = (parse_int(e) for e in line.v)
+      [ @_pub, @_trust, @_n_bits, @_type, @_key_id_64, @_created, @_expires, ] = v
 
   err : () -> @_err
   to_key : () -> null
