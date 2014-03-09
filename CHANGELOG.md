@@ -1,4 +1,10 @@
-### 0.0.37 (2014-03-03)
+## 0.0.38 (2014-03-09)
+
+Features:
+
+  - Better support for non-standard GPG
+
+## 0.0.37 (2014-03-03)
 
 Features:
 
