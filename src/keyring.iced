@@ -610,10 +610,67 @@ exports.load_key = (opts, cb) ->
 
 ##=======================================================================
 
+class RingFileBundle
+
+  ARGS : 
+    secring : "secret-keyring"
+    pubring : "keyring"
+    trustdb : "trustdb-name"
+
+  #-----
+
+  constructor : ({@dir, pub_only, @no_default, @primary}) ->
+    @_files = {}
+    which = if pub_only then [ "pubring" ] else [ "pubring", "secring", "trustdb" ]
+    for w in which 
+      @_files[w] = @get_file w
+
+  #-------
+
+  get_file : (which) -> path.join(@dir, [which, "gpg"].join("."))
+
+  #---------
+
+  mutate_args : (gargs, opts = {}) ->
+    prepend = []
+    prepend.push("--no-default-keyring") if @no_default or opts.no_default
+    for w, file of @_files
+      arg = if (w is 'pubring' and @primary) then "primary-keyring" else @ARGS[w]
+      prepend.push "--#{arg}", file
+    gargs.args = prepend.concat gargs.args
+
+  #---------
+
+  touch : (which, f, cb) ->
+    log().debug "+ Make/check empty #{which} #{f}"
+    ok = true
+    await fs.open f, "ax", 0o600, defer err, fd
+    if not err?
+      log().debug "| Made a new one"
+    else if err.code is "EEXIST"
+      log().debug "| Found one"
+    else
+      log().warn "Unexpected error code from file touch #{f}: #{err.message}"
+      ok = false
+    if fd >= 0 and not err? then fs.close(fd)
+    log().debug "- Made/check empty #{which} -> #{ok}"
+    cb null
+
+  #---------
+
+  touch_all : (cb) ->
+    esc = make_esc cb, "RingFileBundle::touch_all"
+    for which, f of @_files when (which isnt 'trustdb')
+      await @touch which, f, esc defer()
+    cb null
+
+##=======================================================================
+
 class AltKeyRingBase extends BaseKeyRing
 
   constructor : (@dir) ->
     super()
+    @_rfb = @make_ring_file_bundle()
 
   #------
 
@@ -621,11 +678,16 @@ class AltKeyRingBase extends BaseKeyRing
 
   #------
 
+  make_ring_file_bundle : () ->
+    new RingFileBundle { @dir, no_default : true }
+
+  #------
+
   mkfile : (n) -> path.join @dir, n
 
   #------
 
-  post_make : (cb) -> cb null
+  post_make : (cb) -> @_rfb.touch_all cb
 
   #------
 
@@ -676,24 +738,6 @@ class AltKeyRingBase extends BaseKeyRing
 
   #----------------------------
 
-  make_empty_pubring : (cb) ->
-    f = @mkfile("pubring.gpg")
-    log().debug "+ Make/check empty pubring #{f}"
-    ok = true
-    await fs.open f, "ax", 0o600, defer err, fd
-    if not err?
-      log().debug "| Made a new one"
-    else if err.code is "EEXIST"
-      log().debug "| Found one"
-    else
-      log().warn "Unexpected error code from file touch #{f}: #{err.message}"
-      ok = false
-    if fd >= 0 and not err? then fs.close(fd)
-    log().debug "- Made/check empty pubring -> #{ok}"
-    cb null
-
-  #----------------------------
-
   copy_key : (k1, cb) ->
     esc = make_esc cb, "TmpKeyRing::copy_key"
     await k1.load esc defer()
@@ -706,12 +750,7 @@ class AltKeyRingBase extends BaseKeyRing
   # The GPG class will call this right before it makes a call to the shell/gpg.
   # Now is our chance to talk about our special keyring
   mutate_args : (gargs) ->
-    gargs.args = [
-      "--no-default-keyring",
-      "--keyring",            @mkfile("pubring.gpg"),
-      "--secret-keyring",     @mkfile("secring.gpg"),
-      "--trustdb-name",       @mkfile("trustdb.gpg")
-    ].concat gargs.args
+    @_rfb.mutate_args gargs
     log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
 
 ##=======================================================================
@@ -772,10 +811,6 @@ exports.AltKeyRing = class AltKeyRing extends AltKeyRingBase
 
   @make : (dir, cb) -> AltKeyRingBase.make AltKeyRing, dir, cb, { perm : true }
 
-  #------
-
-  post_make : (cb) -> @make_empty_pubring cb
-
 ##=======================================================================
 
 exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
@@ -786,23 +821,26 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
   #------
 
-  # The GPG class will call this right before it makes a call to the shell/gpg.
-  # Now is our chance to talk about our special keyring
-  mutate_args : (gargs) ->
-    prepend = [ "--primary-keyring", @mkfile("pubring.gpg") ]
-    if gargs.list_keys then prepend.push "--no-default-keyring"
-    else if (h = globals().get_home_dir())?
-      prepend = [ "--no-default-keyring",
-                  "--keyring",            path.join(h, "pubring.gpg"),
-                  "--secret-keyring",     path.join(h, "secring.gpg"),
-                  "--trustdb-name",       path.join(h, "trustdb.gpg")
-                ].concat prepend
-    gargs.args = prepend.concat gargs.args
-    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
+  make_ring_file_bundle : () ->
+    new RingFileBundle { pub_only : true, @dir, primary : true }
 
   #------
 
-  post_make : (cb) -> @make_empty_pubring cb
+  # The GPG class will call this right before it makes a call to the shell/gpg.
+  # Now is our chance to talk about our special keyring
+  mutate_args : (gargs) ->
+    @_rfb.mutate_args gargs
+    prepend = if gargs.list_keys then [ "--no-default-keyring" ]
+    else if (h = globals().get_home_dir())
+      [
+          "--no-default-keyring",
+          "--keyring",             path.join(h, "pubring.gpg"),
+          "--secret-keyring",      path.join(h, "secring.gpg"),
+          "--trustdb-name",        path.join(h, "trustdb.gpg")
+      ]
+    else []
+    gargs.args = prepend.concat gargs.args
+    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
 
 ##=======================================================================
 

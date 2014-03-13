@@ -1,4 +1,13 @@
-### 0.0.37 (2014-03-03)
+## 0.0.38 (2014-03-13)
+
+Bugfixes:
+
+  - Better support for users with `secret-keyring` off on an external device. In practice,
+    this means that we have to touch the temporary `secring.gpg` before we can import to it,
+    a constraint which isn't enforced if `secret-keyring` isn't specified in the `gpg.conf` file.
+    See issue keybase/keybase-issues#227
+
+## 0.0.37 (2014-03-03)
 
 Features:
 
