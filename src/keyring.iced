@@ -42,13 +42,16 @@ exports.Globals = class Globals
                   @get_tmp_keyring_dir,
                   @get_key_klass,
                   @get_home_dir,
-                  @log}, @_mring = null) ->
+                  @get_gpg_cmd,
+                  @log}) ->
     @get_preserve_tmp_keyring or= () -> false
     @log or= new Log
     @get_debug or= () -> false
     @get_tmp_keyring_dir or= () -> os.tmpdir()
     @get_key_klass or= () -> GpgKey
     @get_home_dir or= () -> null
+    @get_gpg_cmd or= () -> null
+    @_mring = null
 
   master_ring : () -> @_mring
   set_master_ring : (r) -> @_mring = r
@@ -61,7 +64,8 @@ globals = () -> _globals
 #----------------
 
 exports.init = (d) -> 
-  _globals = new Globals d, new MasterKeyRing()
+  _globals = new Globals d
+  _globals.set_master_ring new MasterKeyRing()
 
 #----------------
 
@@ -381,7 +385,7 @@ exports.GpgKey = class GpgKey
 exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   constructor : () ->
-    super()
+    super { cmd : globals().get_gpg_cmd() }
     @_has_signing_key = null
 
   #------

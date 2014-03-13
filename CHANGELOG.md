@@ -1,4 +1,4 @@
-## 0.0.38 (2014-03-13)
+## 0.0.38 (2014-03-09)
 
 Bugfixes:
 
@@ -6,6 +6,12 @@ Bugfixes:
     this means that we have to touch the temporary `secring.gpg` before we can import to it,
     a constraint which isn't enforced if `secret-keyring` isn't specified in the `gpg.conf` file.
     See issue keybase/keybase-issues#227
+
+## 0.0.38 (2014-03-09)
+
+Features:
+
+  - Better support for non-standard GPG
 
 ## 0.0.37 (2014-03-03)
 
