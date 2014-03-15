@@ -454,7 +454,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     res = null
     unless err?
       index = (new Parser out.toString('utf8')).parse()
-      res = (@make_key(k.to_dict()) for k in index.keys())
+      res = (@make_key(k.to_dict({secret})) for k in index.keys())
     cb err, res
 
   #----------------------------

@@ -70,7 +70,7 @@ class Element
 
 #==========================================================
 
-parse_int = (s) -> if s?.match /^[0-9]+/ then parseInt(s, 10) else s
+parse_int = (s) -> if s?.match /^[0-9]+$/ then parseInt(s, 10) else s
 
 #==========================================================
 
@@ -82,16 +82,17 @@ class BaseKey extends Element
       @_err = new Error "Key is malformed; needs at least 12 fields"
     else
       v = (parse_int(e) for e in line.v)
-      [ @_pub, @_trust, @_n_bits, @_type, @_key_id_64, @_created, @_expires, ] = v
+      [ @_pub, @_trust, @_n_bits, @_type, @_key_id_64, @_created, @_expires ] = v
 
   err : () -> @_err
   to_key : () -> null
   key_id_64 : () -> @_key_id_64
   fingerprint : () -> @_fingerprint
   add_fingerprint : (line) -> @_fingerprint = line.get(9)
-  to_dict : () -> {
+  to_dict : ({secret}) -> {
     fingerprint : @fingerprint(),
-    key_id_64 : @key_id_64()
+    key_id_64 : @key_id_64(),
+    secret : secret
   }
 
 #==========================================================
@@ -116,8 +117,8 @@ class Key extends BaseKey
   userids : () -> @_userids
   subkeys : () -> @_subkeys
 
-  to_dict : () ->
-    r = super()
+  to_dict : (d) ->
+    r = super d
     r.uid = @userids()[0]
     r.all_uids = @userids
     return r
