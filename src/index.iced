@@ -57,6 +57,7 @@ class Index
 
   lookup : () -> @_lookup
   keys : () -> @_keys
+  fingerprints : () -> (k.fingerprint() for k in @keys())
 
 #==========================================================
 
@@ -218,6 +219,7 @@ exports.Parser = class Parser
 #==========================================================
 
 exports.parse = parse = (txt) -> (new Parser(txt).parse())
+exports.list_fingerprints = list_fingerprints = (txt) -> parse(txt).fingerprints()
 
 #==========================================================
 

@@ -13,7 +13,7 @@ fs = require 'fs'
 util = require 'util'
 os = require 'os'
 {a_json_parse} = require('iced-utils').util
-{Parser} = require('./index')
+{list_fingerprints,Parser} = require('./index')
 
 ##=======================================================================
 
@@ -203,13 +203,14 @@ exports.GpgKey = class GpgKey
       log().debug "+ lookup fingerprint"
       args = [ "-k", "--fingerprint", "--with-colons", id ]
       await @gpg { args }, esc defer out
-      rows = colgrep { buffer : out, patterns : { 0 : /^fpr$/ } }
-      if (rows.length is 0) or not (@_fingerprint = rows[0][9])?
+      fp = list_fingerprints out.toString('utf8')
+      if (l = fp.length) is 0
         err = new E.GpgError "Couldn't find GPG fingerprint for #{id}"
-      else if (l = rows.length) > 1
+      else if l > 1
         err = new E.GpgError "Found more than one (#l) keys for #{id}"
       else
         @_state = states.LOADED
+        @_fingerprint = fp[0]
         log().debug "- Map #{id} -> #{@_fingerprint} via gpg"
 
     if not @uid()?
@@ -505,8 +506,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     await @gpg { args : [ "--with-colons", "--fingerprint" ] }, defer err, out
     ret = []
     unless err?
-      rows = colgrep { buffer : out, patterns : { 0: /^fpr$/ } }
-      ret = (col for row in rows when ((col = row[9])? and col.length > 0))
+      ret = list_fingerprints out.toString('utf8')
     cb err, ret
 
   #----------------------------
