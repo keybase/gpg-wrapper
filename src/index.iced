@@ -56,6 +56,7 @@ class Index
       @_lookup.key_id_64.add(i, k)
 
   lookup : () -> @_lookup
+  keys : () -> @_keys
 
 #==========================================================
 
@@ -85,6 +86,10 @@ class BaseKey extends Element
   err : () -> @_err
   to_key : () -> null
   key_id_64 : () -> @_key_id_64
+  fingerprint : () -> @_fingerprint
+  add_fingerprint : (line) ->
+    @_fingerprint = line.get(9)
+
 
 #==========================================================
 
@@ -99,13 +104,14 @@ class Key extends BaseKey
     super line
     @_userids = []
     @_subkeys = []
+    @_top = @
     if @is_ok()
       @add_uid line
 
   emails : () -> (e for u in @_userids when (e = u.email)? )
-  fingerprint : () -> @_fingerprint
   to_key : () -> @
   userids : () -> @_userids
+  subkeys : () -> @_subkeys
 
   all_keys : () -> [ @ ].concat(@_subkeys)
 
@@ -119,20 +125,18 @@ class Key extends BaseKey
       line.warn "got too few fields (#{n})"
     else
       switch (f = line.v[0])
-        when 'fpr' then @add_fingerprint line
+        when 'fpr' then @_top.add_fingerprint line
         when 'uid' then @add_uid line
         when 'uat' then # skip user attributes
         when 'sub' then @add_subkey line
         else
           line.warn "unexpected subfield: #{f}"
 
-  add_fingerprint : (line) ->
-    @_fingerprint = line.get(9)
-
   add_subkey : (line) ->
     key = new Subkey line
     if key.is_ok()
       @_subkeys.push key
+      @_top = key
     else
       line.warn "Bad subkey: #{key.err().message}"
 
