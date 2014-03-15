@@ -453,7 +453,8 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     await @gpg { args, list_keys : true }, defer err, out
     res = null
     unless err?
-      res = (new Parser out.toString('utf8')).parse().keys()
+      index = (new Parser out.toString('utf8')).parse()
+      res = (@make_key(k.to_dict()) for k in index.keys())
     cb err, res
 
   #----------------------------
