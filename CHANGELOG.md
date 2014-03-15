@@ -1,3 +1,12 @@
+## 0.0.40 (2014-03-15)
+
+Bugfixes:
+
+  - Address #4.  Fix Indexing for people who have `with-fingerprint` in their 
+    `gpg.conf` files.
+  - Fix bugs with parsing columns from `gpg --with-colons` output.  We were
+    mangling dates and also key id 64s
+
 ## 0.0.39 (2014-03-09)
 
 Bugfixes:
