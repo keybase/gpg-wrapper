@@ -147,8 +147,10 @@ exports.parse_3 = (T, cb) ->
   v = i.lookup().email.get('max@keybase.io')
   T.equal v.length, 1, "got only 1 key back"
   T.equal v[0].fingerprint(), '8EFBE2E4DD56B35273634E8F6052B2AD31A6631C', "right primary fingerprint"
+  T.equal v[0].key_id_64(), '6052B2AD31A6631C', "right primary key id 64"
   T.equal v[0].subkeys().length, 1, "got only one subkey"
   T.equal v[0].subkeys()[0].fingerprint(), '4AF88842F72A59565C669BDE980A3F0D01FE04DF', "right subkey fingerprint"
+  T.equal v[0].subkeys()[0].key_id_64(), '980A3F0D01FE04DF', "right subkey fingerprint"
   cb()
 
 #======================================================================
