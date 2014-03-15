@@ -88,9 +88,11 @@ class BaseKey extends Element
   to_key : () -> null
   key_id_64 : () -> @_key_id_64
   fingerprint : () -> @_fingerprint
-  add_fingerprint : (line) ->
-    @_fingerprint = line.get(9)
-
+  add_fingerprint : (line) -> @_fingerprint = line.get(9)
+  to_dict : () -> {
+    fingerprint : @fingerprint(),
+    key_id_64 : @key_id_64()
+  }
 
 #==========================================================
 
@@ -113,6 +115,12 @@ class Key extends BaseKey
   to_key : () -> @
   userids : () -> @_userids
   subkeys : () -> @_subkeys
+
+  to_dict : () ->
+    r = super()
+    r.uid = @userids()[0]
+    r.all_uids = @userids
+    return r
 
   all_keys : () -> [ @ ].concat(@_subkeys)
 

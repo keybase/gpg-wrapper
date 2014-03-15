@@ -453,24 +453,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     await @gpg { args, list_keys : true }, defer err, out
     res = null
     unless err?
-      rows = colgrep { buffer : out, patterns : { 0 : /^(sec|pub|uid|fpr)$/ }, separator : /:/ }
-      d = null
-      res = []
-      consume = (d) =>
-        d.uid = userid.parse d.uid if d?.uid?
-        d.secret = secret if d? and secret
-        res.push(@make_key d) if d?
-        {}
-      for row in rows      
-        if (secret and (row[0] is 'sec')) or (not(secret) and (row[0] is 'pub'))
-          d = consume d
-          d.key_id_64 = row[4]
-          d.uid = row[9] if row[9]?
-        else if row[0] is 'uid'
-          d.uid = row[9] if row[9]?
-        else if row[0] is 'fpr'
-          d.fingerprint = row[9] 
-      d = consume d
+      res = (new Parser out.toString('utf8')).parse().keys()
     cb err, res
 
   #----------------------------
