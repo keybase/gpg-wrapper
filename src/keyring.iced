@@ -43,6 +43,7 @@ exports.Globals = class Globals
                   @get_key_klass,
                   @get_home_dir,
                   @get_gpg_cmd,
+                  @get_no_options,
                   @log}) ->
     @get_preserve_tmp_keyring or= () -> false
     @log or= new Log
@@ -51,6 +52,7 @@ exports.Globals = class Globals
     @get_key_klass or= () -> GpgKey
     @get_home_dir or= () -> null
     @get_gpg_cmd or= () -> null
+    @get_no_options or= () -> false
     @_mring = null
 
   master_ring : () -> @_mring
@@ -548,6 +550,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     log().debug "+ oneshot verify"
     ring = null
     clean = (cb) ->
+      log().debug "| oneshot clean"
       if ring?
         await ring.nuke defer err
         log().warn "Error cleaning up 1-shot ring: #{err.message}" if err?
@@ -792,6 +795,29 @@ exports.TmpKeyRing = class TmpKeyRing extends TmpKeyRingBase
   #------
 
   @make : (cb) -> TmpKeyRingBase.make TmpKeyRing, cb
+
+  mutate_args : (gargs) ->
+    #
+    # THE NUCLEAR OPTION
+    #
+    # The nuclear option for dealing with gpg.conf files that we
+    # can't deal with. I would hate to do this, but there are some options,
+    # like `--primary-keyring`, that we just can't work around if they're specified
+    # in `gpg.conf`.
+    #
+    # There's an alternative to the nuclear option, which is to make a 
+    # gpg.conf that's stripped of the bad options, and to reference that
+    # instead. That will be a fussy operation, since we don't know where
+    # the configuration is actually stored. We can guess, but we're likely to
+    # be wrong, **especially** on Windows. Plus, we'll have to keep it in sync
+    # (maybe rewriting our temporary copy every time we start up).
+    #
+    # For now, experts have to declare their willingness to go nuclear.
+    #
+    if globals().get_no_options()
+      gargs.args = [ "--no-options" ].concat gargs.args
+
+    super gargs
 
 ##=======================================================================
 

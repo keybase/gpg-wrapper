@@ -1,3 +1,11 @@
+## 0.0.41 (2014-03-17)
+
+Features:
+
+  - We probably should not call this a feature, but introduce the 
+    "nuclear" option for dealing with fussy gpg.conf files.  Just
+    ignore it for temporary keyrings.  Only on if you specify it.
+
 ## 0.0.40 (2014-03-15)
 
 Bugfixes:
