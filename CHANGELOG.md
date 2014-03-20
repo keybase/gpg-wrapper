@@ -1,3 +1,9 @@
+## 0.0.42 (2014-03-20)
+
+Bugfixes:
+
+  - Close #5: Write an empty trust DB.
+
 ## 0.0.41 (2014-03-17)
 
 Features:

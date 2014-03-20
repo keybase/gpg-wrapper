@@ -603,10 +603,16 @@ exports.load_key = (opts, cb) ->
 
 class RingFileBundle
 
-  ARGS : 
-    secring : "secret-keyring"
-    pubring : "keyring"
-    trustdb : "trustdb-name"
+  FILES : 
+    secring : 
+      arg : "secret-keyring"
+      default : ""
+    pubring : 
+      arg : "keyring"
+      default : ""
+    trustdb : 
+      arg : "trustdb-name"
+      default : "016770670303010501020000532b0f0c000000000000000000000000000000000000000000000000"
 
   #-----
 
@@ -626,7 +632,7 @@ class RingFileBundle
     prepend = []
     prepend.push("--no-default-keyring") if @no_default or opts.no_default
     for w, file of @_files
-      arg = if (w is 'pubring' and @primary) then "primary-keyring" else @ARGS[w]
+      arg = if (w is 'pubring' and @primary) then "primary-keyring" else @FILES[w].arg
       prepend.push "--#{arg}", file
     gargs.args = prepend.concat gargs.args
 
@@ -638,12 +644,17 @@ class RingFileBundle
     await fs.open f, "ax", 0o600, defer err, fd
     if not err?
       log().debug "| Made a new one"
+      d = new Buffer @FILES[which].default, "hex"
+      await fs.write fd, d, 0, d.length, null, defer e2
+      log().error "Write failed: #{e2.message}" if e2?
     else if err.code is "EEXIST"
       log().debug "| Found one"
     else
       log().warn "Unexpected error code from file touch #{f}: #{err.message}"
       ok = false
-    if fd >= 0 and not err? then fs.close(fd)
+    if fd >= 0 and not err? 
+      await fs.close fd, defer e2
+      log().error "Close failed: #{e2.message}" if e2?
     log().debug "- Made/check empty #{which} -> #{ok}"
     cb null
 
@@ -651,7 +662,7 @@ class RingFileBundle
 
   touch_all : (cb) ->
     esc = make_esc cb, "RingFileBundle::touch_all"
-    for which, f of @_files when (which isnt 'trustdb')
+    for which, f of @_files
       await @touch which, f, esc defer()
     cb null
 
