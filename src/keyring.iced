@@ -521,14 +521,21 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #------
 
-  index : (cb) ->
-    await @gpg { args : [ "-k", "--with-fingerprint", "--with-colons" ], quiet : true }, defer err, out
+  index2 : (opts, cb) ->
+    k = if opts?.secret then '-K' else '-k'
+    args = [ k, "--with-fingerprint", "--with-colons" ]
+    args.push q if (q = opts.query)?
+    await @gpg { args, quiet : true }, defer err, out
     i = w = null
     unless err?
       p = new Parser out.toString('utf8')
       i = p.parse()
       w = p.warnings()
     cb err, i, w
+
+  #------
+
+  index : (cb) -> @index2 {}, cb
 
   #------
 
