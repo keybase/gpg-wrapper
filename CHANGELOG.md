@@ -1,3 +1,10 @@
+## 0.0.44 (2014-03-29)
+
+Bugfixes:
+
+  - Simplify read_uids_from_key, and use the Index system
+  - Upgrade to pgp-utils@v0.0.19 to get more lax parsing
+
 ## 0.0.43 (2014-03-28)
 
 Features:

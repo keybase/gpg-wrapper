@@ -83,23 +83,6 @@ exports.GPG = class GPG
     await @assert_no_collision short_id, defer err, n
     err = new E.NotFoundError "Didn't find a key for #{short_id}" unless n is 1
     cb err
-
-  #----
-
-  read_uids_from_key : ({fingerprint, query }, cb) ->
-    args = [ "-k", "--with-colons" ]
-    if fingerprint? then args.push fingerprint
-    else if query? then args.push query
-    uids = []
-    await @run { args, quiet : true } , defer err, out
-    unless err?
-      rows = colgrep {
-        patterns : { 0 : /^uid|pub$/ },
-        buffer : out,
-        separator : /:/
-      } 
-      uids = (u for row in rows when ((col = row[9])? and col.length > 0 and (u = parse(col))?))
-    cb err, uids
-
+    
 ##=======================================================================
 
