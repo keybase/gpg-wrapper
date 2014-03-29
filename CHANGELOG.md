@@ -1,3 +1,15 @@
+## 0.0.43 (2014-03-28)
+
+Features:
+
+  - index2 which also has the ability to index secret keys and use a query
+
+## 0.0.42 (2014-03-20)
+
+Bugfixes:
+
+  - Close #5: Write an empty trust DB.
+
 ## 0.0.41 (2014-03-17)
 
 Features:
