@@ -248,7 +248,10 @@ exports.GpgKey = class GpgKey
   # Read the userIds that have been signed with this key
   read_uids_from_key : (cb) ->
     args = { fingerprint : @fingerprint() }
+    log().debug "+ read_uids_from_keys #{@fingerprint()}"
     await @keyring().read_uids_from_key args, defer err, uids
+    log().debug "| read UIDs got: #{if uids? then JSON.stringify(uids) else null}"
+    log().debug "- read_uids_from_keys -> #{err}"
     cb err, uids
 
   #-------------
@@ -811,6 +814,9 @@ exports.TmpKeyRing = class TmpKeyRing extends TmpKeyRingBase
     # the configuration is actually stored. We can guess, but we're likely to
     # be wrong, **especially** on Windows. Plus, we'll have to keep it in sync
     # (maybe rewriting our temporary copy every time we start up).
+    #   
+    # Discovered: `gpg --gpgconf-list`, which outputs the config file in the 
+    # top line.  This is a start, but need to check how widely supported it is.
     #
     # For now, experts have to declare their willingness to go nuclear.
     #
