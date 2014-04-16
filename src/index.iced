@@ -56,6 +56,7 @@ class Index
       @_lookup.key_id_64.add(i, k)
 
   lookup : () -> @_lookup
+  keys : () -> @_keys
 
 #==========================================================
 
