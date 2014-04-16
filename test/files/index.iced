@@ -107,3 +107,51 @@ exports.parse_2 = (T,cb) ->
   cb()
 
 #======================================================================
+
+gpg_with_fingerprint2_output = """
+tru::1:1393721309:1707777704:3:1:5
+pub:-:4096:1:6052B2AD31A6631C:2014-02-05:2024-02-03::-:keybase.io/max (v0.0.1) <max@keybase.io>::escaESCA:
+fpr:::::::::8EFBE2E4DD56B35273634E8F6052B2AD31A6631C:
+sub:-:2048:1:980A3F0D01FE04DF:2014-02-05:2015-02-05:::::esa:
+fpr:::::::::4AF88842F72A59565C669BDE980A3F0D01FE04DF:
+pub:-:4096:1:BAD2382DE379088C:2014-03-01:2024-02-27::-:keybase.io/max2 <max2@keybase.io>::escaESCA:
+fpr:::::::::741AE71745FE2A9FCE7FB5BCBAD2382DE379088C:
+sub:-:4096:1:276556C8A2529039:2014-03-01:2024-02-27:::::esa:
+fpr:::::::::D505C8C831C3DDF74813DDFF276556C8A2529039:
+pub:-:4096:1:6ADC353FA59EAC16:2014-02-28:2024-02-26::-:keybase.io/max1 (v0.0.1) <max1@keybase.io>::escaESCA:
+fpr:::::::::FA6DFC44C9426A3DEF8B72336ADC353FA59EAC16:
+sub:-:2048:1:CF0E4A8E88CBB038:2014-02-28:2015-02-28:::::esa:
+fpr:::::::::67D9D22291C4D64C0E038C32CF0E4A8E88CBB038:
+pub:u:4096:1:C2A863B7D67F29AE:2014-03-02:2024-02-28::u:keybase.io/max2 <max2@keybase.io>::escaESCA:
+fpr:::::::::A950C514D2EA4A9FB623C97FC2A863B7D67F29AE:
+sub:u:4096:1:527C4EF645328914:2014-03-02:2024-02-28:::::esa:
+fpr:::::::::AF8A6C125F1A20D89F0BC0A3527C4EF645328914:
+pub:-:4096:1:CB963D072C21251A:2014-03-02:2024-02-28::-:keybase.io/max1 (v0.0.1) <max1@keybase.io>::escaESCA:
+fpr:::::::::78E4953F9FF6661C60607AC8CB963D072C21251A:
+sub:-:2048:1:19F02EE567F65B75:2014-03-02:2015-03-02:::::esa:
+fpr:::::::::22B68606B648845584EABDFE19F02EE567F65B75:
+pub:-:4096:1:63847B4B83930F0C:2013-10-04:2017-10-04::-:Maxwell Krohn <themax@gmail.com>::escaESCA:
+fpr:::::::::4475293306243408FA5958DC63847B4B83930F0C:
+uid:-::::2013-10-04::14BC0C35326061518657E0B8F71A23E0CA537034::Max Krohn <themax@gmail.com>:
+sub:-:4096:1:2FE01C454348DA39:2013-10-04:2017-10-04:::::esa:
+fpr:::::::::C4EE7BCBCE2F0953DCF9E8902FE01C454348DA39:
+"""
+
+#======================================================================
+
+exports.parse_3 = (T, cb) ->
+  p = new Parser gpg_with_fingerprint2_output
+  i = p.parse()
+  T.assert i?, "index came back"
+  T.equal i.keys().length, 6, "got back 6 keys"
+  v = i.lookup().email.get('max@keybase.io')
+  T.equal v.length, 1, "got only 1 key back"
+  T.equal v[0].fingerprint(), '8EFBE2E4DD56B35273634E8F6052B2AD31A6631C', "right primary fingerprint"
+  T.equal v[0].key_id_64(), '6052B2AD31A6631C', "right primary key id 64"
+  T.equal v[0].subkeys().length, 1, "got only one subkey"
+  T.equal v[0].subkeys()[0].fingerprint(), '4AF88842F72A59565C669BDE980A3F0D01FE04DF', "right subkey fingerprint"
+  T.equal v[0].subkeys()[0].key_id_64(), '980A3F0D01FE04DF', "right subkey fingerprint"
+  cb()
+
+#======================================================================
+

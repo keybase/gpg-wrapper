@@ -57,6 +57,7 @@ class Index
 
   lookup : () -> @_lookup
   keys : () -> @_keys
+  fingerprints : () -> (k.fingerprint() for k in @keys())
 
 #==========================================================
 
@@ -69,7 +70,7 @@ class Element
 
 #==========================================================
 
-parse_int = (s) -> if s?.match /^[0-9]+/ then parseInt(s, 10) else s
+parse_int = (s) -> if s?.match /^[0-9]+$/ then parseInt(s, 10) else s
 
 #==========================================================
 
@@ -81,11 +82,18 @@ class BaseKey extends Element
       @_err = new Error "Key is malformed; needs at least 12 fields"
     else
       v = (parse_int(e) for e in line.v)
-      [ @_pub, @_trust, @_n_bits, @_type, @_key_id_64, @_created, @_expires, ] = v
+      [ @_pub, @_trust, @_n_bits, @_type, @_key_id_64, @_created, @_expires ] = v
 
   err : () -> @_err
   to_key : () -> null
   key_id_64 : () -> @_key_id_64
+  fingerprint : () -> @_fingerprint
+  add_fingerprint : (line) -> @_fingerprint = line.get(9)
+  to_dict : ({secret}) -> {
+    fingerprint : @fingerprint(),
+    key_id_64 : @key_id_64(),
+    secret : secret
+  }
 
 #==========================================================
 
@@ -100,13 +108,20 @@ class Key extends BaseKey
     super line
     @_userids = []
     @_subkeys = []
+    @_top = @
     if @is_ok()
       @add_uid line
 
   emails : () -> (e for u in @_userids when (e = u.email)? )
-  fingerprint : () -> @_fingerprint
   to_key : () -> @
   userids : () -> @_userids
+  subkeys : () -> @_subkeys
+
+  to_dict : (d) ->
+    r = super d
+    r.uid = @userids()[0]
+    r.all_uids = @userids
+    return r
 
   all_keys : () -> [ @ ].concat(@_subkeys)
 
@@ -120,20 +135,18 @@ class Key extends BaseKey
       line.warn "got too few fields (#{n})"
     else
       switch (f = line.v[0])
-        when 'fpr' then @add_fingerprint line
+        when 'fpr' then @_top.add_fingerprint line
         when 'uid' then @add_uid line
         when 'uat' then # skip user attributes
         when 'sub' then @add_subkey line
         else
           line.warn "unexpected subfield: #{f}"
 
-  add_fingerprint : (line) ->
-    @_fingerprint = line.get(9)
-
   add_subkey : (line) ->
     key = new Subkey line
     if key.is_ok()
       @_subkeys.push key
+      @_top = key
     else
       line.warn "Bad subkey: #{key.err().message}"
 
@@ -215,6 +228,7 @@ exports.Parser = class Parser
 #==========================================================
 
 exports.parse = parse = (txt) -> (new Parser(txt).parse())
+exports.list_fingerprints = list_fingerprints = (txt) -> parse(txt).fingerprints()
 
 #==========================================================
 

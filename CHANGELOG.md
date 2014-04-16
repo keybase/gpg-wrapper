@@ -1,3 +1,48 @@
+## 0.0.44 (2014-03-29)
+
+Bugfixes:
+
+  - Simplify read_uids_from_key, and use the Index system
+  - Upgrade to pgp-utils@v0.0.19 to get more lax parsing
+
+## 0.0.43 (2014-03-28)
+
+Features:
+
+  - index2 which also has the ability to index secret keys and use a query
+
+## 0.0.42 (2014-03-20)
+
+Bugfixes:
+
+  - Close #5: Write an empty trust DB.
+
+## 0.0.41 (2014-03-17)
+
+Features:
+
+  - We probably should not call this a feature, but introduce the 
+    "nuclear" option for dealing with fussy gpg.conf files.  Just
+    ignore it for temporary keyrings.  Only on if you specify it.
+
+## 0.0.40 (2014-03-15)
+
+Bugfixes:
+
+  - Address #4.  Fix Indexing for people who have `with-fingerprint` in their 
+    `gpg.conf` files.
+  - Fix bugs with parsing columns from `gpg --with-colons` output.  We were
+    mangling dates and also key id 64s
+
+## 0.0.39 (2014-03-09)
+
+Bugfixes:
+
+  - Better support for users with `secret-keyring` off on an external device. In practice,
+    this means that we have to touch the temporary `secring.gpg` before we can import to it,
+    a constraint which isn't enforced if `secret-keyring` isn't specified in the `gpg.conf` file.
+    See issue keybase/keybase-issues#227
+
 ## 0.0.38 (2014-03-09)
 
 Features:

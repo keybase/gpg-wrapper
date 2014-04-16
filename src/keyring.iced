@@ -13,7 +13,7 @@ fs = require 'fs'
 util = require 'util'
 os = require 'os'
 {a_json_parse} = require('iced-utils').util
-{Parser} = require('./index')
+{list_fingerprints,Parser} = require('./index')
 
 ##=======================================================================
 
@@ -43,6 +43,7 @@ exports.Globals = class Globals
                   @get_key_klass,
                   @get_home_dir,
                   @get_gpg_cmd,
+                  @get_no_options,
                   @log}) ->
     @get_preserve_tmp_keyring or= () -> false
     @log or= new Log
@@ -51,6 +52,7 @@ exports.Globals = class Globals
     @get_key_klass or= () -> GpgKey
     @get_home_dir or= () -> null
     @get_gpg_cmd or= () -> null
+    @get_no_options or= () -> false
     @_mring = null
 
   master_ring : () -> @_mring
@@ -203,13 +205,14 @@ exports.GpgKey = class GpgKey
       log().debug "+ lookup fingerprint"
       args = [ "-k", "--fingerprint", "--with-colons", id ]
       await @gpg { args }, esc defer out
-      rows = colgrep { buffer : out, patterns : { 0 : /^fpr$/ } }
-      if (rows.length is 0) or not (@_fingerprint = rows[0][9])?
+      fp = list_fingerprints out.toString('utf8')
+      if (l = fp.length) is 0
         err = new E.GpgError "Couldn't find GPG fingerprint for #{id}"
-      else if (l = rows.length) > 1
+      else if l > 1
         err = new E.GpgError "Found more than one (#l) keys for #{id}"
       else
         @_state = states.LOADED
+        @_fingerprint = fp[0]
         log().debug "- Map #{id} -> #{@_fingerprint} via gpg"
 
     if not @uid()?
@@ -244,8 +247,17 @@ exports.GpgKey = class GpgKey
 
   # Read the userIds that have been signed with this key
   read_uids_from_key : (cb) ->
-    args = { fingerprint : @fingerprint() }
-    await @keyring().read_uids_from_key args, defer err, uids
+    fp = @fingerprint()
+    log().debug "+ read_uids_from_keys #{fp}"
+    uids = null
+    if (uids = @_my_userids)?
+      log().debug "| hit cache"
+    else
+      args = { fingerprint : fp }
+      await @keyring().read_uids_from_key args, defer err, tmp
+      uids = @_my_userids = tmp
+    log().debug "| got: #{if uids? then JSON.stringify(uids) else null}"
+    log().debug "- read_uids_from_key -> #{err}"
     cb err, uids
 
   #-------------
@@ -452,24 +464,8 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     await @gpg { args, list_keys : true }, defer err, out
     res = null
     unless err?
-      rows = colgrep { buffer : out, patterns : { 0 : /^(sec|pub|uid|fpr)$/ }, separator : /:/ }
-      d = null
-      res = []
-      consume = (d) =>
-        d.uid = userid.parse d.uid if d?.uid?
-        d.secret = secret if d? and secret
-        res.push(@make_key d) if d?
-        {}
-      for row in rows      
-        if (secret and (row[0] is 'sec')) or (not(secret) and (row[0] is 'pub'))
-          d = consume d
-          d.key_id_64 = row[4]
-          d.uid = row[9] if row[9]?
-        else if row[0] is 'uid'
-          d.uid = row[9] if row[9]?
-        else if row[0] is 'fpr'
-          d.fingerprint = row[9] 
-      d = consume d
+      index = (new Parser out.toString('utf8')).parse()
+      res = (@make_key(k.to_dict({secret})) for k in index.keys())
     cb err, res
 
   #----------------------------
@@ -505,8 +501,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     await @gpg { args : [ "--with-colons", "--fingerprint" ] }, defer err, out
     ret = []
     unless err?
-      rows = colgrep { buffer : out, patterns : { 0: /^fpr$/ } }
-      ret = (col for row in rows when ((col = row[9])? and col.length > 0))
+      ret = list_fingerprints out.toString('utf8')
     cb err, ret
 
   #----------------------------
@@ -535,14 +530,30 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   #------
 
-  index : (cb) ->
-    await @gpg { args : [ "-k", "--with-fingerprint", "--with-colons" ], quiet : true }, defer err, out
+  index2 : (opts, cb) ->
+    k = if opts?.secret then '-K' else '-k'
+    args = [ k, "--with-fingerprint", "--with-colons" ]
+    args.push q if (q = opts.query)?
+    await @gpg { args, quiet : true }, defer err, out
     i = w = null
     unless err?
       p = new Parser out.toString('utf8')
       i = p.parse()
       w = p.warnings()
     cb err, i, w
+
+  #------
+
+  read_uids_from_key :( {fingerprint, query}, cb) ->
+    query = fingerprint or query
+    opts = { query } 
+    await @index2 opts, defer err, index
+    ret = if err? then null else index?.keys()?[0]?.userids()
+    cb err, ret
+
+  #------
+
+  index : (cb) -> @index2 {}, cb
 
   #------
 
@@ -564,6 +575,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
     log().debug "+ oneshot verify"
     ring = null
     clean = (cb) ->
+      log().debug "| oneshot clean"
       if ring?
         await ring.nuke defer err
         log().warn "Error cleaning up 1-shot ring: #{err.message}" if err?
@@ -614,10 +626,78 @@ exports.load_key = (opts, cb) ->
 
 ##=======================================================================
 
+class RingFileBundle
+
+  FILES : 
+    secring : 
+      arg : "secret-keyring"
+      default : ""
+    pubring : 
+      arg : "keyring"
+      default : ""
+    trustdb : 
+      arg : "trustdb-name"
+      default : "016770670303010501020000532b0f0c000000000000000000000000000000000000000000000000"
+
+  #-----
+
+  constructor : ({@dir, pub_only, @no_default, @primary}) ->
+    @_files = {}
+    which = if pub_only then [ "pubring" ] else [ "pubring", "secring", "trustdb" ]
+    for w in which 
+      @_files[w] = @get_file w
+
+  #-------
+
+  get_file : (which) -> path.join(@dir, [which, "gpg"].join("."))
+
+  #---------
+
+  mutate_args : (gargs, opts = {}) ->
+    prepend = []
+    prepend.push("--no-default-keyring") if @no_default or opts.no_default
+    for w, file of @_files
+      arg = if (w is 'pubring' and @primary) then "primary-keyring" else @FILES[w].arg
+      prepend.push "--#{arg}", file
+    gargs.args = prepend.concat gargs.args
+
+  #---------
+
+  touch : (which, f, cb) ->
+    log().debug "+ Make/check empty #{which} #{f}"
+    ok = true
+    await fs.open f, "ax", 0o600, defer err, fd
+    if not err?
+      log().debug "| Made a new one"
+      d = new Buffer @FILES[which].default, "hex"
+      await fs.write fd, d, 0, d.length, null, defer e2
+      log().error "Write failed: #{e2.message}" if e2?
+    else if err.code is "EEXIST"
+      log().debug "| Found one"
+    else
+      log().warn "Unexpected error code from file touch #{f}: #{err.message}"
+      ok = false
+    if fd >= 0 and not err? 
+      await fs.close fd, defer e2
+      log().error "Close failed: #{e2.message}" if e2?
+    log().debug "- Made/check empty #{which} -> #{ok}"
+    cb null
+
+  #---------
+
+  touch_all : (cb) ->
+    esc = make_esc cb, "RingFileBundle::touch_all"
+    for which, f of @_files
+      await @touch which, f, esc defer()
+    cb null
+
+##=======================================================================
+
 class AltKeyRingBase extends BaseKeyRing
 
   constructor : (@dir) ->
     super()
+    @_rfb = @make_ring_file_bundle()
 
   #------
 
@@ -625,11 +705,16 @@ class AltKeyRingBase extends BaseKeyRing
 
   #------
 
+  make_ring_file_bundle : () ->
+    new RingFileBundle { @dir, no_default : true }
+
+  #------
+
   mkfile : (n) -> path.join @dir, n
 
   #------
 
-  post_make : (cb) -> cb null
+  post_make : (cb) -> @_rfb.touch_all cb
 
   #------
 
@@ -680,24 +765,6 @@ class AltKeyRingBase extends BaseKeyRing
 
   #----------------------------
 
-  make_empty_pubring : (cb) ->
-    f = @mkfile("pubring.gpg")
-    log().debug "+ Make/check empty pubring #{f}"
-    ok = true
-    await fs.open f, "ax", 0o600, defer err, fd
-    if not err?
-      log().debug "| Made a new one"
-    else if err.code is "EEXIST"
-      log().debug "| Found one"
-    else
-      log().warn "Unexpected error code from file touch #{f}: #{err.message}"
-      ok = false
-    if fd >= 0 and not err? then fs.close(fd)
-    log().debug "- Made/check empty pubring -> #{ok}"
-    cb null
-
-  #----------------------------
-
   copy_key : (k1, cb) ->
     esc = make_esc cb, "TmpKeyRing::copy_key"
     await k1.load esc defer()
@@ -710,12 +777,7 @@ class AltKeyRingBase extends BaseKeyRing
   # The GPG class will call this right before it makes a call to the shell/gpg.
   # Now is our chance to talk about our special keyring
   mutate_args : (gargs) ->
-    gargs.args = [
-      "--no-default-keyring",
-      "--keyring",            @mkfile("pubring.gpg"),
-      "--secret-keyring",     @mkfile("secring.gpg"),
-      "--trustdb-name",       @mkfile("trustdb.gpg")
-    ].concat gargs.args
+    @_rfb.mutate_args gargs
     log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
 
 ##=======================================================================
@@ -770,15 +832,37 @@ exports.TmpKeyRing = class TmpKeyRing extends TmpKeyRingBase
 
   @make : (cb) -> TmpKeyRingBase.make TmpKeyRing, cb
 
+  mutate_args : (gargs) ->
+    #
+    # THE NUCLEAR OPTION
+    #
+    # The nuclear option for dealing with gpg.conf files that we
+    # can't deal with. I would hate to do this, but there are some options,
+    # like `--primary-keyring`, that we just can't work around if they're specified
+    # in `gpg.conf`.
+    #
+    # There's an alternative to the nuclear option, which is to make a 
+    # gpg.conf that's stripped of the bad options, and to reference that
+    # instead. That will be a fussy operation, since we don't know where
+    # the configuration is actually stored. We can guess, but we're likely to
+    # be wrong, **especially** on Windows. Plus, we'll have to keep it in sync
+    # (maybe rewriting our temporary copy every time we start up).
+    #   
+    # Discovered: `gpg --gpgconf-list`, which outputs the config file in the 
+    # top line.  This is a start, but need to check how widely supported it is.
+    #
+    # For now, experts have to declare their willingness to go nuclear.
+    #
+    if globals().get_no_options()
+      gargs.args = [ "--no-options" ].concat gargs.args
+
+    super gargs
+
 ##=======================================================================
 
 exports.AltKeyRing = class AltKeyRing extends AltKeyRingBase
 
   @make : (dir, cb) -> AltKeyRingBase.make AltKeyRing, dir, cb, { perm : true }
-
-  #------
-
-  post_make : (cb) -> @make_empty_pubring cb
 
 ##=======================================================================
 
@@ -790,23 +874,26 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 
   #------
 
-  # The GPG class will call this right before it makes a call to the shell/gpg.
-  # Now is our chance to talk about our special keyring
-  mutate_args : (gargs) ->
-    prepend = [ "--primary-keyring", @mkfile("pubring.gpg") ]
-    if gargs.list_keys then prepend.push "--no-default-keyring"
-    else if (h = globals().get_home_dir())?
-      prepend = [ "--no-default-keyring",
-                  "--keyring",            path.join(h, "pubring.gpg"),
-                  "--secret-keyring",     path.join(h, "secring.gpg"),
-                  "--trustdb-name",       path.join(h, "trustdb.gpg")
-                ].concat prepend
-    gargs.args = prepend.concat gargs.args
-    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
+  make_ring_file_bundle : () ->
+    new RingFileBundle { pub_only : true, @dir, primary : true }
 
   #------
 
-  post_make : (cb) -> @make_empty_pubring cb
+  # The GPG class will call this right before it makes a call to the shell/gpg.
+  # Now is our chance to talk about our special keyring
+  mutate_args : (gargs) ->
+    @_rfb.mutate_args gargs
+    prepend = if gargs.list_keys then [ "--no-default-keyring" ]
+    else if (h = globals().get_home_dir())
+      [
+          "--no-default-keyring",
+          "--keyring",             path.join(h, "pubring.gpg"),
+          "--secret-keyring",      path.join(h, "secring.gpg"),
+          "--trustdb-name",        path.join(h, "trustdb.gpg")
+      ]
+    else []
+    gargs.args = prepend.concat gargs.args
+    log().debug "| Mutate GPG args; new args: #{gargs.args.join(' ')}"
 
 ##=======================================================================
 
