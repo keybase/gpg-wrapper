@@ -6,7 +6,7 @@ Bugfixes:
     Add new test case for the above. Note that we need to supply `--with-fingerprint`
     twice to get gpg to output fingerprints for subkeys
 
-## 0.0.44 (2014-05-10)
+## 0.0.44 (2014-03-29)
 
 Bugfixes:
   - Simplify read_uids_from_key, and use the Index system
