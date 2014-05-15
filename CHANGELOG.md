@@ -5,6 +5,8 @@ Bugfixes:
   - Fix bug in Indexing, wasn't properly looking for `ssb`s
     Add new test case for the above. Note that we need to supply `--with-fingerprint`
     twice to get gpg to output fingerprints for subkeys
+  - Simplify read_uids_from_key, and use the Index system
+  - Upgrade to pgp-utils@v0.0.19 to get more lax parsing
 
 ## 0.0.43 (2014-03-28)
 
