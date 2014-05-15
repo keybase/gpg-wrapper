@@ -1,3 +1,11 @@
+## 0.0.44 (2014-05-10)
+
+Bugfixes:
+
+  - Fix bug in Indexing, wasn't properly looking for `ssb`s
+    Add new test case for the above. Note that we need to supply `--with-fingerprint`
+    twice to get gpg to output fingerprints for subkeys
+
 ## 0.0.43 (2014-03-28)
 
 Features:
