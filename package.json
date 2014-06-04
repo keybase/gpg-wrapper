@@ -11,11 +11,11 @@
     "url": "git://github.com/keybase/gpg-wrapper"
   },
   "dependencies": {
-    "iced-error": ">=0.0.7",
-    "iced-runtime": "0.0.1",
-    "iced-spawn": ">=0.0.5",
-    "iced-utils": ">=0.1.6",
-    "pgp-utils": ">=0.0.19"
+    "iced-error": ">=0.0.9",
+    "iced-runtime": ">=0.0.1",
+    "iced-spawn": ">=0.0.8",
+    "iced-utils": ">=0.1.16",
+    "pgp-utils": ">=0.0.21"
   },
   "devDependencies": {
     "iced-coffee-script": "1.7.1-c",
