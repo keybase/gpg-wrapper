@@ -4,13 +4,13 @@
 Version: GnuPG/MacGPG2 v2.0.22 (Darwin)
 Comment: GPGTools - https://gpgtools.org
 
-iQEcBAABCgAGBQJTjzG7AAoJEJgKPw0B/gTfq6QIAJfRndRbQBFMk44RSLzgXIH/
-qaORFIfI03RHfd5QPzVPrDuJ/C+V+ypKWC7LOv2qSpiUQFf5xbSIWD1h0y0v8lp9
-9x02rWJ7M6mRGznrH4QfTOxtYIZy/s60cyIUO0HGb7iwf4CyfeJSINNtn+hokqD2
-O9TOT6OClAs9dYmNC48XCpkf4klB/Pk0ljQmUGuYK8rbSr22G95qY6XZPRVXEmlD
-FIWcY2ne9Q1PJWkFIEWCQ3CgLazrSSlK/V/oX5vAfixWDnKbJS320HX7HymyV/rw
-YWI2Kw2PUfEgKXZ/Fxuxa4xPeUefsty4uMn/YZjOjsj0J4cRNysy/Di4V+Nl46A=
-=aR9q
+iQEcBAABCgAGBQJTjz9FAAoJEJgKPw0B/gTfYNYIAIzEKXwnFT709YfHZgPbsS/Q
+C+oKBmcAHIyyUoe8OHkhHY47iRAzg+/eKRuW/Ph2g9NWE3GFUVMVjqADxobqJA5T
+QmIvNHr86S8ZrrsM3+hLmpb0MofKWgjJGZXrCD6ol/I3T4XadcpIwkj3KcUn4pw+
+7HxNsTdfyX55kYagq+nbgbHW68bMP4nTxcT6j2qo8iEuir/bBd8rWEF/cXqrhYiw
+pfzA7n7KQBTSCTHNQ7vCifqs2rF2J3cWHwzGXtXqzFuARK+hr8/ugAocfnU5H++x
+gTlkggN8VE9hrjvEGg/c+NTTh9ro7X8rwRyGt5R4Bk3xr6ejKXRe1AJt+xPojIY=
+=CgZ8
 -----END PGP SIGNATURE-----
 
 ```
@@ -30,14 +30,14 @@ size   exec  file                contents
 502            Makefile          960fe8002c2c2866c0963c9b0ed138dcb2a4feed693a3c668875935902f9b486
 55             README.md         fac7947ca164bd97f854cec88bc0266773ec378f4fb79cb1554662a4fd4079f9
                lib/                                                                              
-1100             colgrep.js      811d8a9c14b8191012ca7073cd9ffbacfc6755616a0c7594b6272056f4279f15
-408              err.js          ac2f5fb468798b012ecc00aecdeb6bc82d86015ccac74b143561f99985e1409d
-6292             gpg.js          e3c7a4e9b8b10179d70bc613373f08fac40f739a1fcccbdc6f244b4470aa367c
-10991            index.js        3346f5058444f0f53a04a84a70456903d0763134932d0afc2b6651b2b0689c80
-92825            keyring.js      bf23a2cfadec98863fe5877287a2de5fcea91dfe21908d2f7a5adc448d6d2164
-387              main.js         746211f8a7833bdf28d41f0feafe94738fccde7a865452faf8b8399dc3867444
-4017             parse.js        6ca6655d08131e67a5fdd476c9f051cfd78951c4e42add83b3b4222d3d8c8573
-709            package.json      bc16e27ff4a860bc3bcc060c070524d2b53e8551142f03f94de50d30bf9421f2
+1100             colgrep.js      8cca2968a077b03d45b761139276f24f32b2a6948ada5fe825fcfd804105cda2
+408              err.js          ac74e7dbc52d8da10a4544bbedb78619a5407cdcdbb3893e7584fc5ca41c8e0d
+6260             gpg.js          68aca49cb3023b84fa7c7b3436b6856d1b160b201828f919afebfc7a79ae22cf
+10991            index.js        0db004e6d3b606d0b5b385a9b91cbe6a8dfb20a793de8086e3084dae4d82ccf9
+92793            keyring.js      efefb8fa25ced79524992309bf82282df42fc4d5c44e6b972700bd69d60ed5df
+387              main.js         92476f33f1ce68c8f74c993c3b3d9603b9f435f44a69ec3098e552b0c4d736b8
+3985             parse.js        57abc69755fc4eea76600b17082827fc23574fd7ba5b2a414cba40b89f0150a2
+709            package.json      34e99830ec6b14ba78d22f62754b503de393a3ff7eb32d098bf7400079018181
                src/                                                                              
 604              colgrep.iced    a3c53c57e739b9af47f7b8cdb31c3aaf3f7416c978e7905ec42bee4966bc3920
 351              err.iced        db7ddbbfbe1f076ad895a83e22cac8e720f260768456dd6aa0c97e5faf7ae9e5
