@@ -1,5 +1,5 @@
 
-{GPG,gpg} = require './gpg'
+{GPG} = require './gpg'
 {chain,make_esc} = require 'iced-error'
 {mkdir_p} = require('iced-utils').fs
 {prng} = require 'crypto'
