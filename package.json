@@ -15,7 +15,8 @@
     "iced-runtime": ">=0.0.1",
     "iced-spawn": ">=0.0.8",
     "iced-utils": ">=0.1.16",
-    "pgp-utils": ">=0.0.21"
+    "pgp-utils": ">=0.0.21",
+    "spotty": "^1.0.0"
   },
   "devDependencies": {
     "iced-coffee-script": "1.7.1-c",
