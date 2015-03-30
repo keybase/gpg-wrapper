@@ -47,7 +47,7 @@ exports.Globals = class Globals
                   @log}) ->
     @get_preserve_tmp_keyring or= () -> false
     @log or= new Log
-    @get_debug or= () -> true
+    @get_debug or= () -> false
     @get_tmp_keyring_dir or= () -> os.tmpdir()
     @get_key_klass or= () -> GpgKey
     @get_home_dir or= () -> null
@@ -180,10 +180,10 @@ exports.GpgKey = class GpgKey
 
   # Save this key to the underlying GPG keyring
   save : (cb) ->
-    args = [ "--no-options", "--import" ]
+    args = [ "--import" ]
     args.push "--import-options", "import-local-sigs" if @_secret
     log().debug "| Save key #{@to_string()} to #{@keyring().to_string()}"
-    await @gpg { args, stdin : @_key_data, quiet : true, secret : @_secret }, defer err
+    await @gpg { args, stdin : @_key_data, quiet : true, secret : @_secret, no_options : true }, defer err
     @_state = states.SAVED
     cb err
 
@@ -204,8 +204,8 @@ exports.GpgKey = class GpgKey
 
     if not @fingerprint()?
       log().debug "+ lookup fingerprint"
-      args = [ "--no-options", "-k", "--fingerprint", "--with-colons", id ]
-      await @gpg { args }, esc defer out
+      args = [ "-k", "--fingerprint", "--with-colons", id ]
+      await @gpg { args, no_options : true }, esc defer out
       fp = list_fingerprints out.toString('utf8')
       if (l = fp.length) is 0
         err = new E.GpgError "Couldn't find GPG fingerprint for #{id}"
@@ -430,7 +430,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   make_oneshot_ring_2 : ({keyblock, single, secret}, cb) ->
     esc = make_esc cb, "BaseKeyRing::_make_oneshot_ring_2"
-    await @gpg { args : [ "--no-options", "--import"], stdin : keyblock, quiet : true, secret }, esc defer()
+    await @gpg { no_options : true, args : [ "--import"], stdin : keyblock, quiet : true, secret }, esc defer()
     await @list_fingerprints esc defer fps
     n = fps.length
     err = if n is 0 then new E.NotFoundError "key import failed"
@@ -447,8 +447,8 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   make_oneshot_ring : ({query, single, keyblock, secret}, cb) ->
     esc = make_esc cb, "BaseKeyRing::make_oneshot_ring"
     unless keyblock?
-      args = [ "-a", "--export" , "--no-options", query ]
-      await @gpg { args }, esc defer keyblock
+      args = [ "-a", "--export" , query ]
+      await @gpg { args, no_options : true }, esc defer keyblock
     await TmpOneShotKeyRing.make esc defer ring
     await ring.make_oneshot_ring_2 { keyblock, single, secret }, defer err, fp
     if err?
@@ -459,10 +459,10 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   #----------------------------
 
   find_keys_full : ( {query, secret, sigs}, cb) ->
-    args = [ "--no-options", "--with-colons", "--fingerprint" ]
+    args = [ "--with-colons", "--fingerprint" ]
     args.push if secret then "-K" else "-k"
     args.push query if query
-    await @gpg { args, list_keys : true }, defer err, out
+    await @gpg { args, list_keys : true, no_options : true }, defer err, out
     res = null
     unless err?
       index = (new Parser out.toString('utf8')).parse()
@@ -472,9 +472,9 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   #----------------------------
 
   find_keys : ({query}, cb) ->
-    args = [ "--no-options", "-k", "--with-colons" ]
+    args = [ "-k", "--with-colons" ]
     args.push query if query
-    await @gpg { args, list_keys : true }, defer err, out
+    await @gpg { args, list_keys : true, no_options : true }, defer err, out
     id64s = null
     unless err?
       rows = colgrep { buffer : out, patterns : { 0 : /^pub$/ }, separator : /:/ }
@@ -526,6 +526,29 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   gpg : (gargs, cb) ->
     log().debug "| Call to #{@CMD}: #{@safe_inspect gargs}"
     gargs.quiet = false if gargs.quiet and globals().get_debug()
+
+    #
+    # THE NUCLEAR OPTION
+    #
+    # The nuclear option for dealing with gpg.conf files that we
+    # can't deal with. I would hate to do this, but there are some options,
+    # like `--primary-keyring`, that we just can't work around if they're specified
+    # in `gpg.conf`.
+    #
+    # There's an alternative to the nuclear option, which is to make a
+    # gpg.conf that's stripped of the bad options, and to reference that
+    # instead. That will be a fussy operation, since we don't know where
+    # the configuration is actually stored. We can guess, but we're likely to
+    # be wrong, **especially** on Windows. Plus, we'll have to keep it in sync
+    # (maybe rewriting our temporary copy every time we start up).
+    #
+    # Discovered: `gpg --gpgconf-list`, which outputs the config file in the
+    # top line.  This is a start, but need to check how widely supported it is.
+    #
+    # For now, experts have to declare their willingness to go nuclear.
+    #
+    gargs.no_options = true if globals().get_no_options()
+    
     await @run gargs, defer err, res
     cb err, res
 
@@ -533,9 +556,9 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   index2 : (opts, cb) ->
     k = if opts?.secret then '-K' else '-k'
-    args = [ "--no-options", k, "--with-fingerprint", "--with-colons" ]
+    args = [ k, "--with-fingerprint", "--with-colons" ]
     args.push q if (q = opts.query)?
-    await @gpg { args, quiet : true }, defer err, out
+    await @gpg { args, quiet : true, no_options : true }, defer err, out
     i = w = null
     unless err?
       p = new Parser out.toString('utf8')
@@ -832,32 +855,6 @@ exports.TmpKeyRing = class TmpKeyRing extends TmpKeyRingBase
   #------
 
   @make : (cb) -> TmpKeyRingBase.make TmpKeyRing, cb
-
-  mutate_args : (gargs) ->
-    #
-    # THE NUCLEAR OPTION
-    #
-    # The nuclear option for dealing with gpg.conf files that we
-    # can't deal with. I would hate to do this, but there are some options,
-    # like `--primary-keyring`, that we just can't work around if they're specified
-    # in `gpg.conf`.
-    #
-    # There's an alternative to the nuclear option, which is to make a
-    # gpg.conf that's stripped of the bad options, and to reference that
-    # instead. That will be a fussy operation, since we don't know where
-    # the configuration is actually stored. We can guess, but we're likely to
-    # be wrong, **especially** on Windows. Plus, we'll have to keep it in sync
-    # (maybe rewriting our temporary copy every time we start up).
-    #
-    # Discovered: `gpg --gpgconf-list`, which outputs the config file in the
-    # top line.  This is a start, but need to check how widely supported it is.
-    #
-    # For now, experts have to declare their willingness to go nuclear.
-    #
-    if globals().get_no_options()
-      gargs.args = [ "--no-options" ].concat gargs.args
-
-    super gargs
 
 ##=======================================================================
 
