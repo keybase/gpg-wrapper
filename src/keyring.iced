@@ -47,7 +47,7 @@ exports.Globals = class Globals
                   @log}) ->
     @get_preserve_tmp_keyring or= () -> false
     @log or= new Log
-    @get_debug or= () -> false
+    @get_debug or= () -> true
     @get_tmp_keyring_dir or= () -> os.tmpdir()
     @get_key_klass or= () -> GpgKey
     @get_home_dir or= () -> null
@@ -180,7 +180,7 @@ exports.GpgKey = class GpgKey
 
   # Save this key to the underlying GPG keyring
   save : (cb) ->
-    args = [ "--import" ]
+    args = [ "--no-options", "--import" ]
     args.push "--import-options", "import-local-sigs" if @_secret
     log().debug "| Save key #{@to_string()} to #{@keyring().to_string()}"
     await @gpg { args, stdin : @_key_data, quiet : true, secret : @_secret }, defer err
@@ -195,7 +195,7 @@ exports.GpgKey = class GpgKey
     esc = make_esc cb, "GpgKey::load"
     args = [
       (if @_secret then "--export-secret-key" else "--export" ),
-      "--export-options", "export-local-sigs",
+      "--export-options", "export-local-sigs", 
       "-a",
       id
     ]
@@ -204,7 +204,7 @@ exports.GpgKey = class GpgKey
 
     if not @fingerprint()?
       log().debug "+ lookup fingerprint"
-      args = [ "-k", "--fingerprint", "--with-colons", id ]
+      args = [ "--no-options", "-k", "--fingerprint", "--with-colons", id ]
       await @gpg { args }, esc defer out
       fp = list_fingerprints out.toString('utf8')
       if (l = fp.length) is 0
@@ -430,7 +430,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   make_oneshot_ring_2 : ({keyblock, single, secret}, cb) ->
     esc = make_esc cb, "BaseKeyRing::_make_oneshot_ring_2"
-    await @gpg { args : [ "--import"], stdin : keyblock, quiet : true, secret }, esc defer()
+    await @gpg { args : [ "--no-options", "--import"], stdin : keyblock, quiet : true, secret }, esc defer()
     await @list_fingerprints esc defer fps
     n = fps.length
     err = if n is 0 then new E.NotFoundError "key import failed"
@@ -447,7 +447,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   make_oneshot_ring : ({query, single, keyblock, secret}, cb) ->
     esc = make_esc cb, "BaseKeyRing::make_oneshot_ring"
     unless keyblock?
-      args = [ "-a", "--export" , query ]
+      args = [ "-a", "--export" , "--no-options", query ]
       await @gpg { args }, esc defer keyblock
     await TmpOneShotKeyRing.make esc defer ring
     await ring.make_oneshot_ring_2 { keyblock, single, secret }, defer err, fp
@@ -459,7 +459,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   #----------------------------
 
   find_keys_full : ( {query, secret, sigs}, cb) ->
-    args = [ "--with-colons", "--fingerprint" ]
+    args = [ "--no-options", "--with-colons", "--fingerprint" ]
     args.push if secret then "-K" else "-k"
     args.push query if query
     await @gpg { args, list_keys : true }, defer err, out
@@ -472,7 +472,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
   #----------------------------
 
   find_keys : ({query}, cb) ->
-    args = [ "-k", "--with-colons" ]
+    args = [ "--no-options", "-k", "--with-colons" ]
     args.push query if query
     await @gpg { args, list_keys : true }, defer err, out
     id64s = null
@@ -533,7 +533,7 @@ exports.BaseKeyRing = class BaseKeyRing extends GPG
 
   index2 : (opts, cb) ->
     k = if opts?.secret then '-K' else '-k'
-    args = [ k, "--with-fingerprint", "--with-colons" ]
+    args = [ "--no-options", k, "--with-fingerprint", "--with-colons" ]
     args.push q if (q = opts.query)?
     await @gpg { args, quiet : true }, defer err, out
     i = w = null
@@ -901,6 +901,12 @@ exports.TmpPrimaryKeyRing = class TmpPrimaryKeyRing extends TmpKeyRingBase
 exports.TmpOneShotKeyRing = class TmpOneShotKeyRing extends TmpKeyRing
 
   @make : (cb) -> TmpKeyRingBase.make TmpOneShotKeyRing, cb
+
+  #---------------
+
+  gpg : (gargs, cb) ->
+    gargs.args.unshift "--no-options"
+    super gargs, cb
 
   #---------------
 
