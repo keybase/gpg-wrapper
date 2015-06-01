@@ -830,7 +830,7 @@ class TmpKeyRingBase extends AltKeyRingBase
 
   nuke : (cb) ->
     unless @_nuked
-      log().debug "| nuking temporary kerying: #{@dir}"
+      log().debug "| nuking temporary keyring: #{@dir}"
       await fs.readdir @dir, defer err, files
       if err?
         log().error "Cannot read dir #{@dir}: #{err.message}"
