@@ -18,7 +18,7 @@ sub:-:1024:1:6F61BAE56CA1B67A:1389274486:1420810486:::::esa:
       0 : /pub|sub/
       4 : /A.*7/
     },
-    buffer : (new Buffer input, 'utf8')
+    buffer : (Buffer.from input, 'utf8')
     separator : /:/
   }
   T.equal res[0]?[4], '079F6793014A5F79', 'first row found'

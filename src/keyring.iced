@@ -693,7 +693,7 @@ class RingFileBundle
     await fs.open f, "ax", 0o600, defer err, fd
     if not err?
       log().debug "| Made a new one"
-      d = new Buffer @FILES[which].default, "hex"
+      d = Buffer.from @FILES[which].default, "hex"
       await fs.write fd, d, 0, d.length, null, defer e2
       log().error "Write failed: #{e2.message}" if e2?
     else if err.code is "EEXIST"

@@ -1,3 +1,7 @@
+## 1.0.6 (2019-02-01)
+
+- Retire (new Buffer), use Buffer.from
+
 ## 1.0.5 (2015-05-27)
 
 Bugfixes:
