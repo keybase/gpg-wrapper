@@ -21,7 +21,7 @@
   "devDependencies": {
     "iced-coffee-script": "1.7.1-c",
     "iced-test": ">=0.0.9",
-    "minimist": "~0.0.7"
+    "minimist": "~1.2.2"
   },
   "author": "Maxwell Krohn <themax@gmail.com>",
   "license": "BSD-3-Clause",
